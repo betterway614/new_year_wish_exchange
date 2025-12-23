@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>收到祝福</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/vant/lib/index.css"/>
+    <script src="https://unpkg.com/vant/lib/vant.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 定义三套主题样式 (Consistency 核心) */
+        
+        /* 主题1: 鸿运 (Red) */
+        .theme-red .card-body { background: linear-gradient(135deg, #ffcdd2 0%, #ffebee 100%); color: #b71c1c; border: 4px solid #d32f2f; }
+        .theme-red .card-icon { background-color: #d32f2f; color: #fff; }
+        
+        /* 主题2: 金玉 (Gold) */
+        .theme-gold .card-body { background: linear-gradient(135deg, #fff9c4 0%, #fffde7 100%); color: #f57f17; border: 4px solid #fbc02d; }
+        .theme-gold .card-icon { background-color: #fbc02d; color: #fff; }
+        
+        /* 主题3: 水墨 (Ink) */
+        .theme-ink .card-body { background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%); color: #424242; border: 4px solid #616161; }
+        .theme-ink .card-icon { background-color: #616161; color: #fff; }
+
+        /* 进场动画 */
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+
+        .pop-enter-active { animation: pop-in 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes pop-in {
+            0% { opacity: 0; transform: scale(0.5) translateY(50px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 min-h-screen">
+    <div id="app" class="h-screen w-full flex flex-col items-center justify-center overflow-hidden relative">
+        
+        <div class="absolute inset-0 z-0">
+             <div class="absolute top-0 left-0 w-full h-full bg-[url('https://cdn.pixabay.com/photo/2017/01/24/03/51/texture-2004557_1280.jpg')] opacity-10 bg-cover"></div>
+        </div>
+
+        <transition name="fade">
+            <div v-if="!isOpen" class="z-10 text-center cursor-pointer" @click="openCard">
+                <div class="animate-bounce mb-4">
+                    <div class="w-64 h-48 bg-red-700 rounded-lg shadow-2xl relative flex items-center justify-center border-t-8 border-red-800">
+                        <div class="text-6xl">🧧</div>
+                        <div class="absolute -top-6 text-yellow-200 font-bold text-lg tracking-widest">
+                            来自 {{ matchedData.nickname }}
+                        </div>
+                    </div>
+                </div>
+                <p class="text-white text-opacity-80 animate-pulse">点击拆开祝福</p>
+            </div>
+        </transition>
+
+        <transition name="pop">
+            <div v-if="isOpen" class="z-20 w-full max-w-sm px-4">
+                
+                <div :class="currentStyle.cssClass" class="w-full rounded-2xl shadow-2xl overflow-hidden relative transform rotate-1">
+                    
+                    <div class="card-body p-8 min-h-[400px] flex flex-col relative">
+                        <div class="card-icon w-12 h-12 rounded-full flex items-center justify-center text-2xl absolute -top-4 -right-4 shadow-md">
+                            {{ currentStyle.icon }}
+                        </div>
+
+                        <div class="mt-4">
+                            <h2 class="text-xl font-bold opacity-80">To: 有缘人</h2>
+                            <div class="w-full h-[1px] bg-current opacity-20 my-4"></div>
+                            
+                            <p class="text-lg leading-loose font-serif text-justify min-h-[120px]">
+                                {{ matchedData.content }}
+                            </p>
+                            
+                            <div class="mt-8 text-right">
+                                <p class="text-xs opacity-60 uppercase">From</p>
+                                <p class="text-xl font-bold">{{ matchedData.nickname }}</p>
+                            </div>
+                        </div>
+
+                        <div class="absolute bottom-0 left-0 w-full h-2 bg-current opacity-20"></div>
+                    </div>
+                </div>
+
+                <div class="mt-10 space-y-3">
+                    <p class="text-center text-white/50 text-xs mb-4">截图屏幕即可保存祝福</p>
+                    <van-button round block color="linear-gradient(to right, #ff6034, #ee0a24)" @click="goHome">
+                        返回首页
+                    </van-button>
+                </div>
+            </div>
+        </transition>
+
+    </div>
+
+    <script>
+        const { createApp, ref, computed } = Vue;
+        
+        // 样式配置表 (需与发送端一致)
+        const STYLES = {
+            0: { cssClass: 'theme-red', icon: '🏮' },   // 鸿运当头
+            1: { cssClass: 'theme-gold', icon: '💰' },  // 金玉满堂
+            2: { cssClass: 'theme-ink', icon: '🏔️' }   // 水墨丹青
+        };
+
+        const app = createApp({
+            setup() {
+                const isOpen = ref(false);
+                
+                // 模拟从后端获取的数据 (包含 sender 选定的 style_id)
+                const matchedData = ref({
+                    nickname: "运维组-大卫",
+                    content: "祝你在新的一年里，服务器永不宕机，代码一次跑通，发际线依然坚挺！新年快乐！",
+                    style_id: 1 // 假设发送者选了“金玉满堂”
+                });
+
+                // 计算当前应展示的样式
+                const currentStyle = computed(() => {
+                    return STYLES[matchedData.value.style_id] || STYLES[0];
+                });
+
+                const openCard = () => {
+                    // 播放音效(可选)
+                    isOpen.value = true;
+                };
+
+                const goHome = () => {
+                    window.location.href = 'index.html';
+                };
+
+                return { 
+                    isOpen, 
+                    matchedData, 
+                    currentStyle, 
+                    openCard, 
+                    goHome 
+                };
+            }
+        });
+        app.use(vant);
+        app.mount('#app');
+    </script>
+</body>
+</html>

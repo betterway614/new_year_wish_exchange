@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>新春悦换 - 首页</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/vant/lib/index.css"/>
+    <script src="https://unpkg.com/vant/lib/vant.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 全局样式重置与字体设置 */
+        body { 
+            background: linear-gradient(135deg, #B71C1C 0%, #880E4F 100%); 
+            font-family: "Ma Shan Zheng", "KaiTi", "STKaiti", serif; 
+            overflow: hidden; /* 防止滚动条 */
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 修复说明：
+           这里使用了 Base64 编码的 SVG。
+           我绘制了一个接近您上传图片风格的“线条描边祥云”，
+           并将其转换为代码直接嵌入，这样您不需要保存任何图片文件即可显示。
+        */
+        .pattern-cloud {
+            position: absolute;
+            inset: 0;
+            background-repeat: repeat; /* 让祥云铺满全屏 */
+            background-size: 300px 300px; /* 调整纹理大小 */
+            opacity: 0.15; /* 调整透明度，让它隐约可见，不抢眼 */
+            pointer-events: none;
+            z-index: 1;
+            /* 金色线条风格祥云 SVG */
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 200 200'%3E%3Cpath d='M40,120 Q30,120 25,110 Q15,90 35,80 Q45,60 70,65 Q85,45 110,50 Q130,30 155,45 Q175,40 180,60 Q195,70 185,90 Q195,110 175,120 Q165,140 140,135 Q120,155 90,145 Q70,155 50,140 Q35,145 40,120 Z' fill='none' stroke='%23FFD700' stroke-width='2' opacity='0.8'/%3E%3Cpath d='M60,95 Q70,85 85,90 M110,80 Q125,75 140,85 M90,115 Q110,125 130,110' fill='none' stroke='%23FFD700' stroke-width='1' opacity='0.5'/%3E%3C/svg%3E");
+        }
+
+        /* 书法字体发光效果 */
+        .glow-text {
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.6), 0 0 20px rgba(255, 0, 0, 0.8);
+        }
+
+        /* 动画定义 */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(2deg); }
+        }
+        @keyframes swing {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+        @keyframes rain {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+        }
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 粒子样式 */
+        .particle {
+            position: absolute;
+            z-index: 5;
+            pointer-events: none;
+            animation: rain linear infinite;
+        }
+
+        /* 灯笼摆动 */
+        .lantern-swing {
+            animation: swing 3s ease-in-out infinite;
+            transform-origin: top center;
+        }
+
+        /* 按钮光泽特效 */
+        .btn-shine {
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-shine::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent);
+            transform: skewX(-25deg);
+            transition: 0.5s;
+        }
+        .btn-shine:active::after {
+            left: 200%;
+            transition: 0s;
+        }
+        
+        /* 音乐按钮旋转 */
+        .music-spin {
+            animation: spin-slow 4s linear infinite;
+        }
+
+        /* 计数器边框装饰 */
+        .counter-border {
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.2), 0 4px 6px rgba(0,0,0,0.1);
+            background: rgba(139, 0, 0, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="min-h-screen relative flex flex-col items-center justify-between py-8 overflow-hidden text-white">
+        
+        <div class="absolute inset-0 pattern-cloud pointer-events-none z-0"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20 pointer-events-none z-0"></div>
+
+        <div v-for="p in particles" :key="p.id" 
+             class="particle text-2xl filter drop-shadow-md"
+             :style="{
+                 left: p.left + '%',
+                 animationDuration: p.duration + 's',
+                 animationDelay: p.delay + 's',
+                 fontSize: p.size + 'px'
+             }">
+            {{ p.type }}
+        </div>
+
+        <div class="absolute top-6 right-6 z-50">
+            <div @click="toggleMusic" 
+                 class="w-10 h-10 rounded-full border-2 border-yellow-500/50 flex items-center justify-center bg-black/30 backdrop-blur-md cursor-pointer hover:bg-black/50 transition-colors">
+                <van-icon :name="isPlaying ? 'music' : 'play'" size="20" color="#FFD700" :class="{'music-spin': isPlaying}" />
+            </div>
+            <audio ref="bgm" loop>
+                <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+            </audio>
+        </div>
+
+        <div class="z-10 text-center mt-6 relative">
+            <div class="absolute -top-4 -left-8 text-4xl opacity-80 lantern-swing" style="transform-origin: top right;">🏮</div>
+            <div class="absolute -top-4 -right-8 text-4xl opacity-80 lantern-swing" style="animation-delay: 1.5s; transform-origin: top left;">🏮</div>
+            
+            <div class="text-7xl mb-2 animate-bounce drop-shadow-lg filter">🧧</div>
+            <h1 class="text-5xl md:text-6xl font-bold text-yellow-400 tracking-[0.2em] glow-text mb-2">新春悦换</h1>
+            <div class="flex items-center justify-center gap-3 mt-2">
+                <div class="h-[1px] w-12 bg-gradient-to-r from-transparent to-yellow-600/50"></div>
+                <p class="text-yellow-100/90 text-sm md:text-base tracking-[0.3em] font-sans font-light">2026 NEW YEAR EXCHANGE</p>
+                <div class="h-[1px] w-12 bg-gradient-to-l from-transparent to-yellow-600/50"></div>
+            </div>
+        </div>
+
+        <div class="z-10 counter-border rounded-2xl px-6 py-3 flex items-center gap-3 mt-6 backdrop-blur-md transform transition hover:scale-105 duration-300">
+            <div class="flex flex-col items-center">
+                <span class="relative flex h-3 w-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500 shadow-[0_0_8px_#4ade80]"></span>
+                </span>
+                <span class="text-[10px] text-yellow-200/60 mt-1 uppercase">Live</span>
+            </div>
+            <div class="h-8 w-[1px] bg-yellow-500/20"></div>
+            <div class="flex flex-col items-start">
+                <span class="text-yellow-100/80 text-xs tracking-wider">现场已集结</span>
+                <div class="flex items-baseline gap-1">
+                    <strong class="text-2xl text-yellow-300 font-mono font-bold">{{ count }}</strong>
+                    <span class="text-xs text-yellow-200/60">人</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-1 flex items-center justify-center w-full z-0 relative">
+            <div class="w-80 h-80 bg-red-600/30 rounded-full blur-[80px] absolute animate-pulse"></div>
+            <div class="w-60 h-60 bg-yellow-500/20 rounded-full blur-[40px] absolute"></div>
+            
+            <div class="relative z-10 text-center lantern-swing">
+                <div class="text-[12rem] leading-none filter drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] transform transition-transform active:scale-95 cursor-pointer" @click="fireworks">
+                    🏮
+                </div>
+                <div class="text-yellow-400 text-sm tracking-[0.5em] mt-[-20px] opacity-80 font-bold animate-pulse">
+                    万 事 如 意
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full px-8 z-10 mb-8 flex flex-col items-center gap-4">
+            <van-button 
+                round 
+                block 
+                color="linear-gradient(135deg, #FFD700 0%, #F57F17 100%)"
+                class="!h-16 !text-red-900 !font-bold !text-2xl shadow-[0_8px_20px_rgba(245,127,23,0.4)] hover:shadow-[0_12px_24px_rgba(245,127,23,0.6)] hover:-translate-y-1 active:translate-y-0 transition-all duration-300 btn-shine border-2 border-yellow-200"
+                @click="start"
+            >
+                <span class="mr-2">✍️</span> 开始写祝福
+            </van-button>
+            
+            <div class="text-center mt-2 opacity-70">
+                <div class="inline-flex items-center gap-2 bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm">
+                    <van-icon name="shield-o" size="12" />
+                    <p class="text-yellow-50/80 text-[10px]">需填写昵称参与 | 局域网安全环境</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted, onUnmounted } = Vue;
+        const { Toast } = vant;
+
+        const app = createApp({
+            setup() {
+                const count = ref(88);
+                const isPlaying = ref(false);
+                const bgm = ref(null);
+                const particles = ref([]);
+                let particleTimer = null;
+
+                const start = () => {
+                    window.location.href = 'write.html';
+                };
+
+                const toggleMusic = () => {
+                    if (!bgm.value) return;
+                    if (isPlaying.value) {
+                        bgm.value.pause();
+                        isPlaying.value = false;
+                    } else {
+                        bgm.value.play().then(() => {
+                            isPlaying.value = true;
+                        }).catch(e => {
+                            Toast.fail('播放失败，请检查网络或权限');
+                        });
+                    }
+                };
+
+                const createParticle = () => {
+                    const types = ['🧧', '🧨', '✨', '🏮', '🎆'];
+                    const type = types[Math.floor(Math.random() * types.length)];
+                    particles.value.push({
+                        id: Date.now() + Math.random(),
+                        type: type,
+                        left: Math.random() * 100,
+                        duration: 5 + Math.random() * 10,
+                        delay: Math.random() * 5,
+                        size: 14 + Math.random() * 16
+                    });
+                    if (particles.value.length > 30) {
+                        particles.value.shift();
+                    }
+                };
+
+                const fireworks = () => {
+                    for(let i=0; i<10; i++) {
+                        setTimeout(createParticle, i * 100);
+                    }
+                    Toast.success('好运加成！');
+                };
+
+                onMounted(() => {
+                    particleTimer = setInterval(createParticle, 800);
+                    for(let i=0; i<15; i++) createParticle();
+                    setInterval(() => {
+                        if(Math.random() > 0.5) {
+                            count.value += Math.floor(Math.random() * 3);
+                        } else {
+                            count.value = Math.max(0, count.value - 1);
+                        }
+                    }, 3000);
+                });
+
+                onUnmounted(() => {
+                    if (particleTimer) clearInterval(particleTimer);
+                });
+
+                return { count, start, isPlaying, toggleMusic, bgm, particles, fireworks };
+            }
+        });
+        app.use(vant);
+        app.mount('#app');
+    </script>
+</body>
+</html>

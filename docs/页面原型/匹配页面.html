@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>匹配中...</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #1a1a1a; color: white; }
+        /* 雷达波纹动画 */
+        .radar-spinner {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle, rgba(211, 47, 47, 0.4) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        .radar-spinner::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            border-radius: 50%;
+            animation: ripple 2s infinite;
+        }
+        @keyframes pulse { 0% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(0.95); opacity: 0.8; } }
+        @keyframes ripple { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1.5); opacity: 0; } }
+    </style>
+</head>
+<body>
+    <div id="app" class="h-screen flex flex-col items-center justify-center p-6 text-center">
+        
+        <div class="radar-spinner mb-10 flex items-center justify-center">
+            <span class="text-4xl">🧧</span>
+        </div>
+
+        <h2 class="text-2xl font-bold mb-2">正在寻找有缘人...</h2>
+        <p class="text-gray-400 text-sm mb-8">请保持页面打开，不要锁屏</p>
+
+        <div class="w-64 bg-gray-700 rounded-full h-1.5 mb-4 overflow-hidden">
+            <div class="bg-yellow-400 h-1.5 rounded-full animate-[width_2s_ease-in-out_infinite]" style="width: 30%"></div>
+        </div>
+
+        <div class="bg-white/10 rounded-lg p-4 text-xs text-left w-full max-w-xs space-y-2">
+            <p class="text-green-400">✓ 你的祝福已安全寄出</p>
+            <p class="text-yellow-200">↻ 正在检索匹配池 ({{ timer }}s)</p>
+        </div>
+
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted } = Vue;
+        createApp({
+            setup() {
+                const timer = ref(0);
+                
+                onMounted(() => {
+                    // 计时器
+                    setInterval(() => { timer.value++ }, 1000);
+                    
+                    // 模拟 3秒后 匹配成功
+                    setTimeout(() => {
+                        window.location.href = 'result.html';
+                    }, 3000);
+                });
+                return { timer };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

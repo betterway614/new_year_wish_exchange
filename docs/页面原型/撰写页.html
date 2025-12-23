@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>撰写祝福</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/vant/lib/index.css"/>
+    <script src="https://unpkg.com/vant/lib/vant.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #F8F5F2; }
+        .card-preview-active { border: 3px solid #D32F2F; transform: scale(1.05); }
+    </style>
+</head>
+<body>
+    <div id="app" class="min-h-screen pb-24">
+        <van-nav-bar title="写下祝福" left-arrow @click-left="goBack" class="!bg-[#F8F5F2]"></van-nav-bar>
+
+        <div class="p-5">
+            <div class="mb-6">
+                <label class="block text-gray-700 font-bold mb-2 flex items-center">
+                    你的昵称 <span class="text-red-500 ml-1 text-sm">(必填*)</span>
+                </label>
+                <input 
+                    v-model="form.nickname"
+                    type="text" 
+                    placeholder="请输入昵称 (2-10字)"
+                    class="w-full p-4 rounded-xl bg-white border border-gray-200 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200 transition-all text-lg"
+                >
+            </div>
+
+            <div class="mb-6">
+                <label class="block text-gray-700 font-bold mb-2">新年祝福</label>
+                <div class="relative">
+                    <textarea 
+                        v-model="form.content"
+                        rows="5" 
+                        placeholder="写下你对TA的新年祝愿..."
+                        class="w-full p-4 rounded-xl bg-white border border-gray-200 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200 transition-all text-gray-600 leading-relaxed"
+                    ></textarea>
+                    <span class="absolute bottom-3 right-3 text-xs text-gray-400">{{form.content.length}}/200</span>
+                </div>
+                <div class="flex gap-2 mt-3 overflow-x-auto no-scrollbar">
+                    <span @click="fillTemplate('万事顺遂')" class="px-3 py-1 bg-red-50 text-red-600 rounded-full text-xs whitespace-nowrap cursor-pointer">万事顺遂</span>
+                    <span @click="fillTemplate('升职加薪')" class="px-3 py-1 bg-red-50 text-red-600 rounded-full text-xs whitespace-nowrap cursor-pointer">升职加薪</span>
+                    <span @click="fillTemplate('平安喜乐')" class="px-3 py-1 bg-red-50 text-red-600 rounded-full text-xs whitespace-nowrap cursor-pointer">平安喜乐</span>
+                </div>
+            </div>
+
+            <div class="mb-8">
+                <label class="block text-gray-700 font-bold mb-3">选择卡片风格</label>
+                <div class="flex space-x-4 overflow-x-auto pb-4">
+                    <div v-for="(style, index) in styles" :key="index" 
+                         @click="form.style = index"
+                         :class="['w-24 h-32 flex-shrink-0 rounded-lg shadow-sm transition-all cursor-pointer overflow-hidden relative', form.style === index ? 'card-preview-active' : 'border border-gray-200']">
+                        <div :class="style.bgClass" class="w-full h-full flex items-center justify-center text-xs text-white/80 font-bold">
+                            {{ style.name }}
+                        </div>
+                        <div v-if="form.style === index" class="absolute bottom-0 right-0 bg-red-600 text-white rounded-tl-lg px-1">✓</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="fixed bottom-0 left-0 w-full p-4 bg-white shadow-lg border-t border-gray-100">
+            <van-button 
+                round 
+                block 
+                color="#D32F2F" 
+                :disabled="!isValid"
+                class="!h-12 !font-bold !text-lg"
+                @click="submit"
+            >
+                投递祝福
+            </van-button>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed } = Vue;
+        const app = createApp({
+            setup() {
+                const form = ref({
+                    nickname: '',
+                    content: '',
+                    style: 0
+                });
+
+                const styles = [
+                    { name: '鸿运当头', bgClass: 'bg-gradient-to-br from-red-500 to-red-700' },
+                    { name: '金碧辉煌', bgClass: 'bg-gradient-to-br from-yellow-400 to-yellow-600' },
+                    { name: '清新水墨', bgClass: 'bg-gradient-to-br from-gray-200 to-gray-400' }
+                ];
+
+                const isValid = computed(() => {
+                    return form.value.nickname.trim().length >= 2 && form.value.content.trim().length > 0;
+                });
+
+                const fillTemplate = (text) => {
+                    form.value.content = text + "，" + form.value.content;
+                };
+
+                const goBack = () => window.history.back();
+
+                const submit = () => {
+                    if (!isValid.value) return;
+                    vant.showLoadingToast({
+                        message: '正在投递...',
+                        forbidClick: true,
+                    });
+                    
+                    // 模拟网络请求
+                    setTimeout(() => {
+                        // 将昵称存入本地，供结果页演示使用
+                        localStorage.setItem('my_nickname', form.value.nickname);
+                        window.location.href = 'match.html';
+                    }, 1000);
+                };
+
+                return { form, styles, isValid, goBack, submit, fillTemplate };
+            }
+        });
+        app.use(vant);
+        app.mount('#app');
+    </script>
+</body>
+</html>
