@@ -1,43 +1,42 @@
 <template>
   <div class="wish-wall-container">
-    <!-- Background Layers -->
+    
     <div class="cloud-background"></div>
     <div class="cloud-overlay"></div>
-    
-    <!-- Decorations -->
-    <div class="decoration lantern" style="top: 10%; left: 10%;"></div>
-    <div class="decoration lantern" style="top: 15%; right: 15%;"></div>
-    <div class="decoration ingot" style="top: 20%; left: 30%;"></div>
-    <div class="decoration ingot" style="top: 25%; right: 25%;"></div>
 
-    <!-- Title -->
-    <div class="title-decoration">
-      <h1 class="main-title">福满乾坤</h1>
-      <p class="sub-title">New Year Blessings Wall</p>
+    <div class="wall-scaler" :style="scalerStyle">
+      
+      <div class="decoration lantern" style="top: 10%; left: 10%;"></div>
+      <div class="decoration lantern" style="top: 15%; right: 15%;"></div>
+      <div class="decoration ingot" style="top: 20%; left: 30%;"></div>
+      <div class="decoration ingot" style="top: 25%; right: 25%;"></div>
+
+      <div class="title-decoration">
+        <h1 class="main-title">福满乾坤</h1>
+        <p class="sub-title">New Year Blessings Wall</p>
+      </div>
+
+      <transition-group name="list" tag="div" class="blessing-wall">
+        <div 
+          v-for="item in blessings" 
+          :key="item.id"
+          class="blessing-card"
+          :class="['card-style-' + item.styleIndex, { pinned: item.isPinned }]"
+          :style="!item.isPinned ? { 
+            top: item.top + '%', 
+            left: item.left + '%', 
+            '--rotation': `${item.rotation}deg`,
+            zIndex: item.zIndex 
+          } : {}"
+          @click.stop="togglePin(item)"
+          title="点击可以固定/取消固定"
+        >
+          <div class="card-text">{{ item.text }}</div>
+          <div class="card-from">—— {{ item.from }}</div>
+        </div>
+      </transition-group>
     </div>
 
-    <!-- Blessings Container -->
-    <transition-group name="list" tag="div" class="blessing-wall">
-      <div 
-        v-for="item in blessings" 
-        :key="item.id"
-        class="blessing-card"
-        :class="['card-style-' + item.styleIndex, { pinned: item.isPinned }]"
-        :style="!item.isPinned ? { 
-          top: item.top + '%', 
-          left: item.left + '%', 
-          '--rotation': `${item.rotation}deg`,
-          zIndex: item.zIndex 
-        } : {}"
-        @click.stop="togglePin(item)"
-        title="点击可以固定/取消固定"
-      >
-        <div class="card-text">{{ item.text }}</div>
-        <div class="card-from">—— {{ item.from }}</div>
-      </div>
-    </transition-group>
-
-    <!-- Control Panel -->
     <div class="control-panel">
       <button class="control-btn" @click="toggleGenerator">
         {{ isGenerating ? '暂停生成' : (loadError ? '重试加载' : '继续生成') }}
@@ -48,18 +47,50 @@
         <template v-else>屏幕祝福: {{ blessings.length }} 条</template>
       </div>
       <button class="control-btn secondary" @click="clearAll">
-        清空屏幕
+        清空
       </button>
       <button class="control-btn secondary" @click="$router.push('/')">
-        返回首页
+        返回
       </button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import request from '../utils/request'
+
+// === 缩放与布局核心逻辑 ===
+const DESIGN_WIDTH = 1200 
+const scaleRatio = ref(1)
+const windowHeight = ref(800)
+
+const scalerStyle = computed(() => {
+  return {
+    width: `${DESIGN_WIDTH}px`,
+    // 高度反向补偿，确保缩放后正好填满垂直屏幕
+    height: `${windowHeight.value / scaleRatio.value}px`,
+    
+    // 核心修改：居中定位
+    position: 'absolute',
+    top: '0',
+    left: '50%', 
+    marginLeft: `-${DESIGN_WIDTH / 2}px`, // 负边距居中法
+    
+    // 核心修改：从顶部中心开始缩放
+    transformOrigin: 'top center',
+    transform: `scale(${scaleRatio.value})`
+  }
+})
+
+const updateScale = () => {
+  const w = window.innerWidth
+  const h = window.innerHeight
+  windowHeight.value = h
+  // 计算缩放比：如果屏幕宽 > 设计宽，保持 1 (不放大，留白)；否则缩小适应
+  scaleRatio.value = Math.min(w / DESIGN_WIDTH, 1) 
+}
+// ==========================
 
 const blessings = ref([])
 const isGenerating = ref(false)
@@ -103,8 +134,8 @@ const createBlessing = () => {
   if (blessingDatabase.value.length === 0) return
 
   const randomMsg = blessingDatabase.value[Math.floor(Math.random() * blessingDatabase.value.length)]
-  const top = Math.floor(Math.random() * 80) + 5
-  const left = Math.floor(Math.random() * 85) + 5
+  const top = Math.floor(Math.random() * 80) + 10 
+  const left = Math.floor(Math.random() * 80) + 10
   const rotation = Math.floor(Math.random() * 20) - 10
   const zIndex = ++zIndexCounter
 
@@ -123,10 +154,9 @@ const createBlessing = () => {
 
   blessings.value.push(newBlessing)
 
-  // Auto remove after 12 seconds (as per requirement)
   const lifeTimer = setTimeout(() => {
     removeBlessing(newBlessing.id)
-  }, 12000)
+  }, 18000)
 
   newBlessing.timer = lifeTimer
 }
@@ -152,7 +182,7 @@ const startGenerator = () => {
   if (isGenerating.value) return
   if (blessingDatabase.value.length === 0) return
   createBlessing();
-  generatorTimer = setInterval(createBlessing, 800);
+  generatorTimer = setInterval(createBlessing, 500);
   isGenerating.value = true;
 };
 
@@ -186,6 +216,9 @@ const clearAll = () => {
 };
 
 onMounted(async () => {
+  updateScale()
+  window.addEventListener('resize', updateScale)
+
   await fetchBlessings()
   startGenerator()
 
@@ -195,6 +228,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  window.removeEventListener('resize', updateScale)
   stopGenerator()
   clearAll()
   if (refreshTimer) {
@@ -216,19 +250,18 @@ onUnmounted(() => {
 }
 
 .wish-wall-container {
-  position: fixed; /* Changed to fixed to cover everything */
+  position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  overflow: hidden;
+  overflow: hidden; 
   font-family: "Ma Shan Zheng", "ZCOOL XiaoWei", serif;
-  z-index: 100; /* Ensure it's on top */
-  background: #5e0e1c;
+  z-index: 100;
+  background: #5e0e1c; /* 底色 */
 }
 
-/* ================= 背景层 ================= */
-/* 动态云纹背景 */
+/* ================= 背景层 (从 Scaler 中移出) ================= */
 .cloud-background {
   position: absolute;
   top: 0;
@@ -239,30 +272,31 @@ onUnmounted(() => {
   z-index: -2;
 }
 
-/* 云纹动画层 */
 .cloud-overlay {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
+  width: 100%; /* 始终覆盖全屏 */
   height: 100%;
   background-image: url('https://t1.chatglm.cn/file/694a14f9ea7a889f596cd614.png?expired_at=1766894720&sign=2553a9932868d8b4314c8893be546829&ext=png');
-  background-size: 300px 300px;
+  background-size: 500px 500px; /* 增大尺寸减少重复感 */
   background-repeat: repeat;
-  opacity: 0.15;
-  animation: cloudFloat 30s linear infinite;
+  opacity: 0.12;
+  /* 改进：确保位移距离与 size 一致以实现无缝循环 */
+  animation: cloudLoop 60s linear infinite;
   z-index: -1;
 }
 
-/* 云纹飘动动画 */
-@keyframes cloudFloat {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  100% { transform: translate(100px, -100px) rotate(5deg); }
+@keyframes cloudLoop {
+  0% { background-position: 0 0; }
+  100% { background-position: 500px -500px; } /* 移动一个完整周期的距离 */
 }
 
 /* ================= 祝福卡片样式 ================= */
 .blessing-wall {
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
@@ -295,7 +329,6 @@ onUnmounted(() => {
   transform: rotate(var(--rotation));
 }
 
-/* 卡片出现动画 */
 @keyframes cardAppear {
   from {
     opacity: 0;
@@ -317,45 +350,84 @@ onUnmounted(() => {
 /* 固定卡片（弹窗） */
 .blessing-card.pinned {
   border-color: #c41e3a;
-  background-color: #fff;
+  background-color: #ffffff !important;
   box-shadow: 0 0 30px rgba(0,0,0,0.5);
-  /* 覆盖绝对定位，改为居中弹窗 */
-  position: fixed !important;
+  
+  position: absolute !important; 
   top: 50% !important;
   left: 50% !important;
-  transform: translate(-50%, -50%) !important;
+  transform: translate(-50%, -50%) !important; 
   z-index: 10000 !important;
+  isolation: isolate;
   
-  /* 自适应尺寸 */
-  width: 90vw;
-  max-width: 500px;
-  height: auto;
-  min-height: 200px;
-  padding: 30px;
+  /* === 核心修改点开始 === */
+  /* 默认情况（针对大屏/电脑）：
+     使用固定宽度，模拟信纸感觉，不至于太宽难读 
+  */
+  width: 600px; 
+  max-width: 90%; /* 防止极端情况溢出 */
   
-  /* 可读性优化 */
-  font-size: 24px;
+  padding: 40px;
+  font-size: 24px; /* 电脑端字号 */
+  /* === 核心修改点结束 === */
+
   display: flex;
   flex-direction: column;
   justify-content: center;
+  min-height: 300px;
+  height: auto;
 }
+/* 针对小屏幕（手机）的特殊处理 */
+@media screen and (max-width: 768px) {
+  .blessing-card.pinned {
+    /* 1. 宽度加大：从 85% 增加到 92%，让卡片更宽，利用率更高 */
+    width: 110% !important; 
+    
+    /* 2. 内边距调整：稍微减小内边距，给文字腾地方 */
+    padding: 30px 20px !important;
+    
+    /* 3. 正文字号大幅增大：
+       原理：目标视觉大小 16px / 缩放比例 0.3 ≈ 54px 
+    */
+    font-size: 54px !important; 
+    line-height: 1.6 !important;
+  }
+  
+  /* 4. 针对落款（From）的单独调整 */
+ .blessing-card.pinned .card-text,
+ .blessing-card.pinned .card-from {
+  position: relative !important; /* 必须有 position 才能使用 z-index */
+  z-index: 10 !important;        /* 正数，保证在遮罩(负数)之上 */
+  text-shadow: none !important;  /* 去除可能导致模糊的阴影 */
+}
+  
+  /* 5. 针对图钉图标的调整 */
+  .blessing-card.pinned::after {
+    z-index: 10 !important; /* 图钉图标要在最上层 */
+    font-size: 60px !important; /* 图标也要跟着变大 */
+    top: 20px !important;
+    right: 20px !important;
+  }
+}
+  
+  .blessing-card.pinned .card-text {
+    line-height: 1.5;
+  }
 
-/* 小屏适配 */
-@media (max-width: 600px) {
-    .blessing-card.pinned {
-        width: 95vw;
-        padding: 20px;
-        font-size: 20px;
-    }
-}
 
 .blessing-card.pinned .card-text {
     margin-bottom: 20px;
     line-height: 1.6;
 }
 
+.blessing-card.pinned .card-text,
 .blessing-card.pinned .card-from {
-    font-size: 18px;
+    position: relative;
+    z-index: 1;
+}
+
+.blessing-card.pinned .card-from {
+    font-size: 22px;
     align-self: flex-end;
 }
 
@@ -364,28 +436,47 @@ onUnmounted(() => {
   position: absolute;
   top: 10px;
   right: 10px;
-  left: auto;
-  transform: none;
-  font-size: 24px;
+  font-size: 32px;
+  z-index: 2;
 }
 
-/* 固定卡片遮罩层 */
+/* 遮罩层：扩大范围以覆盖可能的宽屏区域 */
+/* 固定卡片（弹窗）的背景遮罩层优化 */
 .blessing-card.pinned::before {
     content: '';
-    position: fixed;
-    top: -50vh;
-    left: -50vw;
-    width: 200vw;
-    height: 200vh;
-    background: rgba(0,0,0,0.5);
-    z-index: -1;
+    position: absolute;
+    /* 覆盖范围保持不变，确保足够大 */
+    top: -200%;
+    left: -200%;
+    width: 500%;
+    height: 500%;
+    
+    /* === 核心修改开始 === */
+    
+    /* 1. 颜色减淡：从 0.6 降至 0.2，减少"黑压压"的感觉 */
+    background: rgba(0, 0, 0, 0.1); 
+    
+    /* 2. 增加磨砂质感：模糊背景，营造景深，聚焦前景 */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px); /* 兼容 Safari / iOS */
+    
+    /* 3. (可选) 如果想要更喜庆，可以用极淡的深红色代替黑色
+       background: rgba(50, 0, 0, 0.3); 
+    */
+    
+    /* === 核心修改结束 === */
+    
+    z-index: 0 !important;
     pointer-events: auto;
+    
+    /* 增加一个渐变过渡，让遮罩出现得更柔和 */
+    pointer-events: auto; /* 允许点击遮罩关闭 */
+    transition: all 0.3s ease;
 }
 
 .card-text { margin-bottom: 8px; font-weight: bold; }
 .card-from { font-size: 14px; color: #888; font-style: italic; }
 
-/* 不同颜色的卡片变体 */
 .card-style-1 { background: #fff; }
 .card-style-2 { background: #fffbf0; border-color: #daa520; }
 .card-style-3 { background: #fff0f5; border-color: #db7093; color: #8b0a50; }
@@ -447,18 +538,23 @@ onUnmounted(() => {
 /* ================= 底部控制面板 ================= */
 .control-panel {
   position: fixed;
-  bottom: 20px;
+  bottom: 30px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.9);
-  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 12px 20px;
   border-radius: 30px;
   box-shadow: 0 5px 20px rgba(0,0,0,0.4);
   display: flex;
-  gap: 15px;
+  gap: 12px;
   z-index: 1000;
   align-items: center;
+  white-space: nowrap; 
+  max-width: 95vw;
+  overflow-x: auto;
 }
+
+.control-panel::-webkit-scrollbar { display: none; }
 
 .control-btn {
   border: none;
@@ -470,6 +566,7 @@ onUnmounted(() => {
   font-weight: bold;
   transition: all 0.2s;
   font-size: 14px;
+  flex-shrink: 0;
 }
 
 .control-btn:hover { background: #a01830; transform: translateY(-2px); }
@@ -479,8 +576,8 @@ onUnmounted(() => {
 .status-text {
   color: #333;
   font-size: 14px;
-  min-width: 100px;
   text-align: center;
+  flex-shrink: 0;
 }
 
 /* ================= 标题装饰 ================= */
@@ -491,9 +588,10 @@ onUnmounted(() => {
   transform: translateX(-50%);
   color: #ffd700;
   text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-  z-index: 10001; /* 标题“福满乾坤”始终置顶 */
+  z-index: 10001; 
   pointer-events: none;
   text-align: center;
+  width: 100%;
 }
 
 .main-title {

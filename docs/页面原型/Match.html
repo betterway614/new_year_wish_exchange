@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新春悦换 - 匹配中</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入书法字体 - 与 write_wish.html 一致 -->
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- 基础样式 (完全参考 write_wish.html) --- */
+        body {
+            background: radial-gradient(ellipse at top, #3a0d12 0%, #1a0507 100%);
+            color: white;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        .font-brush { font-family: 'Ma Shan Zheng', cursive; }
+        .font-elegant { font-family: 'ZCOOL XiaoWei', serif; }
+
+        /* 纹理层 (完全参考 write_wish.html) */
+        .pattern-overlay {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23f8e5c0' fill-opacity='0.03'%3E%3Cpath d='M30 0L60 30L30 60L0 30z'/%3E%3C/g%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Canvas 背景 */
+        #bg-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+        }
+
+        /* 云纹装饰 (参考 write_wish.html) */
+        .cloud-decoration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            background: linear-gradient(to bottom, rgba(211, 47, 47, 0.1), transparent);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* --- 匹配页专用动画样式 --- */
+        
+        /* 祈福雷达动画 - 速度放缓 */
+        .radar-pulse {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(211, 47, 47, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: pulse-scale 4s infinite ease-out;
+            z-index: 1;
+        }
+
+        .radar-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 140px;
+            height: 140px;
+            border: 2px solid rgba(255, 215, 0, 0.5);
+            border-radius: 50%;
+            animation: ripple 4s infinite cubic-bezier(0, 0.2, 0.8, 1);
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.25);
+        }
+
+        @keyframes pulse-scale {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0.6; }
+            100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+        }
+
+        @keyframes ripple {
+            0% { transform: translate(-50%, -50%) scale(0.8); opacity: 1; border-width: 3px; }
+            100% { transform: translate(-50%, -50%) scale(2.2); opacity: 0; border-width: 0px; }
+        }
+
+        /* 中心信封浮动动画 */
+        .envelope-float {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(-2deg); }
+            50% { transform: translateY(-12px) rotate(2deg); }
+        }
+
+        /* 信封光晕效果 */
+        .envelope-glow {
+            box-shadow: 
+                0 0 60px rgba(211, 47, 47, 0.4),
+                0 0 100px rgba(255, 215, 0, 0.2),
+                inset 0 0 40px rgba(255, 255, 255, 0.1);
+            animation: glow-pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes glow-pulse {
+            0%, 100% { 
+                box-shadow: 
+                    0 0 60px rgba(211, 47, 47, 0.4),
+                    0 0 100px rgba(255, 215, 0, 0.2),
+                    inset 0 0 40px rgba(255, 255, 255, 0.1);
+            }
+            50% { 
+                box-shadow: 
+                    0 0 80px rgba(211, 47, 47, 0.6),
+                    0 0 120px rgba(255, 215, 0, 0.3),
+                    inset 0 0 50px rgba(255, 255, 255, 0.15);
+            }
+        }
+
+        /* 文字动画 */
+        .text-shine {
+            background: linear-gradient(90deg, #fff, #ffd700, #fff);
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: text-shine 3s infinite linear;
+        }
+
+        @keyframes text-shine {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* 状态卡片样式 */
+        .status-card {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        /* 装饰性旋转圆环 */
+        .rotate-ring {
+            animation: rotate 30s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* 云纹飘动 */
+        .cloud-pattern {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cpath fill='%23f8e5c0' fill-opacity='0.03' d='M50 10c15 0 25 15 25 30s-10 25-25 25-25-15-25-30 10-25 25-30z'/%3E%3C/svg%3E");
+            background-size: 200px 200px;
+            animation: drift 20s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes drift {
+            0% { background-position: 0 0; }
+            100% { background-position: 200px 200px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="h-screen w-screen flex flex-col items-center justify-center relative overflow-hidden">
+        
+        <!-- Canvas 背景 -->
+        <canvas id="bg-canvas"></canvas>
+        
+        <!-- 纹理层 -->
+        <div class="pattern-overlay"></div>
+        
+        <!-- 云纹装饰 -->
+        <div class="cloud-decoration"></div>
+
+        <!-- 装饰性旋转圆环 -->
+        <div class="rotate-ring absolute w-[400px] h-[400px] border border-yellow-500/10 rounded-full pointer-events-none"></div>
+        <div class="rotate-ring absolute w-[300px] h-[300px] border border-red-500/10 rounded-full pointer-events-none" style="animation-direction: reverse; animation-duration: 20s;"></div>
+
+        <!-- 主体雷达区 -->
+        <div class="relative z-10 flex flex-col items-center">
+            
+            <!-- 动态波纹层 -->
+            <div class="radar-pulse"></div>
+            <div class="radar-ring"></div>
+            <div class="radar-ring" style="animation-delay: 1.2s"></div>
+            <div class="radar-ring" style="animation-delay: 2.4s"></div>
+            <div class="radar-ring" style="animation-delay: 3.6s"></div>
+
+            <!-- 中心信封 -->
+            <div class="envelope-float relative z-20 w-32 h-24 bg-gradient-to-br from-red-600 to-red-800 rounded-lg envelope-glow flex items-center justify-center border-t-4 border-red-900 transform perspective-1000">
+                <span class="text-6xl drop-shadow-2xl">✉️</span>
+                <!-- 信封阴影 -->
+                <div class="absolute bottom-0 left-0 right-0 h-4 bg-black/20 blur-sm rounded-b-lg"></div>
+            </div>
+
+            <!-- 文本信息 -->
+            <div class="mt-10 text-center space-y-4">
+                <h2 class="text-3xl font-brush text-shine drop-shadow-lg tracking-wider">
+                    寻找有缘人
+                </h2>
+                <p class="text-gray-400 text-sm tracking-widest font-elegant">
+                    正在检索祝福池...
+                </p>
+            </div>
+
+            <!-- 状态信息卡片 -->
+            <div class="mt-8 status-card rounded-2xl px-6 py-4 space-y-3 w-64 backdrop-blur-md">
+                <div class="flex items-center text-green-400 gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span class="text-sm">祝福已安全寄出</span>
+                </div>
+                
+                <div class="h-px bg-white/10"></div>
+                
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-300">等待时长</span>
+                    <span class="font-mono text-yellow-400 tracking-wider">
+                        {{ formatTime(timer) }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- 装饰性提示 -->
+            <div class="mt-8 flex items-center gap-2 text-gray-500 text-xs">
+                <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                <span>正在为您匹配最佳缘分</span>
+            </div>
+        </div>
+
+        <!-- 底部装饰 -->
+        <div class="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#1a0507] to-transparent pointer-events-none z-10"></div>
+    </div>
+
+    <script>
+        // --- Canvas 粒子背景 (增强荧光效果) ---
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * width;
+                this.y = height + Math.random() * 200; // 初始位置更低，防止屏幕空白
+                this.speed = 0.3 + Math.random() * 2;
+                this.size = 1.5 + Math.random() * 5;
+                this.opacity = 0.1 + Math.random() * 0.5;
+                
+                // 调整粒子类型概率，增加荧光粒子
+                const rand = Math.random();
+                if (rand > 0.85) {
+                    this.type = 'lantern'; // 15% 灯笼
+                } else if (rand > 0.65) {
+                    this.type = 'firefly'; // 20% 荧光萤火虫
+                    this.speed = 0.5 + Math.random() * 1.5; // 荧光粒子飘动稍慢
+                    this.size = 1 + Math.random() * 2; // 荧光粒子较小
+                } else {
+                    this.type = 'coin'; // 65% 金币
+                }
+
+                this.angle = Math.random() * Math.PI * 2;
+                this.spin = (Math.random() - 0.5) * 0.03;
+                this.wobble = Math.random() * 0.02;
+            }
+
+            update() {
+                this.y -= this.speed;
+                this.angle += this.spin;
+                this.x += Math.sin(this.angle * 2) * 0.8 + Math.sin(Date.now() * this.wobble) * 0.5;
+
+                if (this.y < -80) this.reset();
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+
+                if (this.type === 'firefly') {
+                    // 荧光萤火虫效果 - 核心修改点
+                    ctx.shadowBlur = 20; // 强光晕
+                    ctx.shadowColor = 'rgba(255, 215, 0, 0.9)'; // 金色荧光
+                    ctx.fillStyle = '#FFF'; // 核心亮白
+                    
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // 额外的一层光晕增加荧光感
+                    ctx.shadowBlur = 40;
+                    ctx.shadowColor = 'rgba(255, 215, 0, 0.5)';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size * 2, 0, Math.PI * 2);
+                    ctx.fill();
+                } 
+                else if (this.type === 'coin') {
+                    // 金币效果
+                    const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, this.size);
+                    gradient.addColorStop(0, '#FFF59D');
+                    gradient.addColorStop(0.5, '#FFD700');
+                    gradient.addColorStop(1, '#FF8F00');
+                    
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = gradient;
+                    ctx.shadowBlur = 15 + this.size * 3;
+                    ctx.shadowColor = 'rgba(255, 215, 0, 0.6)';
+                    ctx.fill();
+
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size * 0.7, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(255, 243, 224, 0.8)';
+                    ctx.lineWidth = this.size * 0.15;
+                    ctx.stroke();
+                } else {
+                    // 灯笼效果
+                    const glowGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, this.size * 3);
+                    glowGradient.addColorStop(0, 'rgba(255, 69, 0, 0.4)');
+                    glowGradient.addColorStop(1, 'transparent');
+                    ctx.fillStyle = glowGradient;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size * 3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    const bodyGradient = ctx.createLinearGradient(-this.size, 0, this.size, 0);
+                    bodyGradient.addColorStop(0, '#D32F2F');
+                    bodyGradient.addColorStop(0.5, '#FF5252');
+                    bodyGradient.addColorStop(1, '#B71C1C');
+                    
+                    ctx.fillStyle = bodyGradient;
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = '#FF6B6B';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, this.size * 2.2, this.size * 1.8, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
+                    ctx.lineWidth = this.size * 0.1;
+                    for (let i = -2; i <= 2; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(i * this.size * 0.8, -this.size * 1.5);
+                        ctx.quadraticCurveTo(i * this.size * 0.9, 0, i * this.size * 0.8, this.size * 1.5);
+                        ctx.stroke();
+                    }
+
+                    const coreGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, this.size * 0.6);
+                    coreGradient.addColorStop(0, '#FFD700');
+                    coreGradient.addColorStop(0.6, '#FF8F00');
+                    coreGradient.addColorStop(1, 'transparent');
+                    ctx.fillStyle = coreGradient;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size * 0.6, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        function initParticles() {
+            for(let i = 0; i < 80; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            
+            const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+            bgGradient.addColorStop(0, '#2c0b0e');
+            bgGradient.addColorStop(0.5, '#1a0507');
+            bgGradient.addColorStop(1, '#0f0204');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, width, height);
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        initParticles();
+        animate();
+
+        // --- Vue 应用逻辑 ---
+        const { createApp, ref, onMounted, onUnmounted } = Vue;
+        
+        createApp({
+            setup() {
+                const timer = ref(0);
+                let timerInterval = null;
+
+                const formatTime = (seconds) => {
+                    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+                    const s = (seconds % 60).toString().padStart(2, '0');
+                    return `${m}:${s}`;
+                };
+
+                onMounted(() => {
+                    timerInterval = setInterval(() => {
+                        timer.value++;
+                    }, 1000);
+
+                    // 模拟匹配延迟 (3秒后自动跳转)
+                    setTimeout(() => {
+                        clearInterval(timerInterval);
+                        window.location.href = 'result_beautified.html'; // 跳转到结果页
+                    }, 3000);
+                });
+
+                onUnmounted(() => {
+                    if (timerInterval) clearInterval(timerInterval);
+                });
+
+                return { timer, formatTime };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

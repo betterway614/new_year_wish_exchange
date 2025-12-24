@@ -1,15 +1,11 @@
 <template>
   <div class="write-page">
-    <!-- 动态背景 Canvas -->
     <canvas ref="bgCanvas" class="bg-canvas"></canvas>
     
-    <!-- 纹理层 -->
     <div class="pattern-overlay"></div>
     
-    <!-- 云纹装饰 -->
     <div class="cloud-decoration"></div>
 
-    <!-- 顶部导航 -->
     <div class="nav-bar">
         <div class="nav-back group" @click="back">
             <div class="back-icon-bg">
@@ -24,14 +20,11 @@
         </div>
     </div>
 
-    <!-- 主内容卡片 -->
-    <div class="glass-card festive-border">
+    <div class="glass-card festive-border no-scrollbar">
         
-        <!-- 装饰圆环 -->
         <div class="decoration-circle circle-1"></div>
         <div class="decoration-circle circle-2"></div>
 
-        <!-- 标题区 -->
         <div class="header-section">
             <div class="header-line"></div>
             <h1 class="page-title font-brush">撰写祝福</h1>
@@ -42,10 +35,8 @@
             </div>
         </div>
 
-        <!-- 表单区 -->
         <div class="form-section">
             
-            <!-- 昵称输入 -->
             <div class="form-group">
                 <label class="form-label">
                     <span class="step-badge">1</span>
@@ -69,7 +60,6 @@
                 </div>
             </div>
 
-            <!-- 祝福内容 -->
             <div class="form-group">
                 <label class="form-label">
                     <span class="step-badge badge-yellow">2</span>
@@ -92,7 +82,6 @@
                     </div>
                 </div>
                 
-                <!-- 快捷标签 -->
                 <div class="tags-wrapper">
                     <span 
                         v-for="tag in tags" 
@@ -105,7 +94,6 @@
                 </div>
             </div>
 
-            <!-- 卡片风格选择 -->
             <div class="form-group">
                 <label class="form-label">
                     <span class="step-badge badge-purple">3</span>
@@ -116,16 +104,13 @@
                             @click="selectStyle(t.id)"
                             :class="['style-card', styleId === t.id ? 'active' : 'inactive']">
                         
-                        <!-- 背景渐变 -->
                         <div :class="t.cssClass" class="style-bg"></div>
                         
-                        <!-- 内容 -->
                         <div class="style-content">
                             <div class="style-icon">{{ t.icon }}</div>
                             <span class="style-name">{{ t.name }}</span>
                         </div>
 
-                        <!-- 选中标记 -->
                         <div v-if="styleId === t.id" class="check-mark">✓</div>
                     </div>
                 </div>
@@ -133,7 +118,6 @@
         </div>
     </div>
 
-    <!-- 底部按钮 -->
     <div class="bottom-bar">
         <button 
             @click="submit"
@@ -368,7 +352,7 @@ function back() {
     display: flex;
     flex-direction: column;
     color: #333;
-    padding-bottom: calc(160px + env(safe-area-inset-bottom));
+    /* 移除 padding-bottom，因为卡片和底部栏现在是独立定位的 */
 }
 
 .bg-canvas {
@@ -401,7 +385,7 @@ function back() {
     position: fixed;
     top: 0;
     width: 100%;
-    z-index: 50;
+    z-index: 200; /* 确保在卡片之上 */
     padding: 12px 16px;
     display: flex;
     align-items: center;
@@ -445,20 +429,37 @@ function back() {
     margin: 0;
 }
 
-/* 玻璃卡片 */
+/* 核心修改：玻璃卡片适配
+  使用 fixed 定位，但通过 inset 留出上下空间，避免遮挡
+*/
 .glass-card {
-    position: relative;
-    z-index: 10;
-    margin: 80px auto 100px; /* Leave space for bottom bar */
+    position: fixed;
+    
+    /* 上部留出导航栏高度，下部留出底部按钮高度，两侧留出边距 */
+    top: 68px;
+    bottom: 120px; /* 这个高度确保卡片底部不会被按钮遮挡 */
+    left: 20px;
+    right: 20px;
+    
+    margin: auto; /* 在上述限制区域内垂直水平居中 */
+    
+    /* 尺寸限制 */
+    width: 100%;
+    max-width: 600px;
+    height: fit-content; /* 根据内容自适应高度 */
+    
+    /* 关键：防止小屏幕下内容溢出，且不遮挡上下区域 */
+    max-height: calc(100vh - 188px); /* 视口减去(top+bottom)的安全距离 */
+    overflow-y: auto; /* 内容过多时内部滚动 */
+    
+    /* 视觉样式 */
+    z-index: 50; /* 比导航和底部栏低 */
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.85) 100%);
     backdrop-filter: blur(16px);
     border: 2px solid rgba(255, 215, 0, 0.4);
     border-radius: 24px;
     padding: 32px 24px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
-    max-width: 600px;
-    align-self: center;
-    width: calc(100% - 40px);
     box-sizing: border-box;
 }
 
@@ -660,7 +661,7 @@ function back() {
     width: 100%;
     padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
     background: linear-gradient(to top, rgba(26, 5, 7, 0.95), transparent);
-    z-index: 40;
+    z-index: 200; /* 确保最高层级 */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -707,12 +708,16 @@ function back() {
     .nav-title { font-size: 18px; }
     .cloud-decoration { height: 88px; }
 
+    /* 移动端适配 */
     .glass-card {
-        margin: 72px 0 160px;
-        width: calc(100% - 24px);
+        top: 60px;
+        bottom: 110px; /* 移动端底部按钮区域较紧凑，留足空间 */
+        left: 16px;
+        right: 16px;
+        width: auto; /* 重置固定宽度，跟随 inset */
         padding: 22px 14px;
         border-radius: 20px;
-        align-self: center;
+        max-height: calc(100vh - 170px);
     }
 
     .header-section { margin-bottom: 22px; }

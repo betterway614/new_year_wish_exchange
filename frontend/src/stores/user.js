@@ -77,6 +77,11 @@ export const useUserStore = defineStore('user', {
       // Add timestamp to prevent caching
       const res = await request.get(`/card/my`, { params: { uuid: this.uuid, t: Date.now() } })
       const data = res?.data
+      if (data?.status === 'NOT_FOUND') {
+        this.setMatched(null)
+        this.setSubmitted(false)
+        return null
+      }
       if (data?.status === 'MATCHED') {
         this.setMatched(data)
         return data

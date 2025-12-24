@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>新春悦换 - 撰写祝福</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/vant/lib/index.css"/>
+    <script src="https://unpkg.com/vant/lib/vant.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+
+    <style>
+        /* 全局重置与字体 */
+        body {
+            background: radial-gradient(ellipse at top, #3a0d12 0%, #1a0507 100%);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            overflow-x: hidden;
+        }
+        
+        .font-brush { font-family: 'Ma Shan Zheng', cursive; }
+        .font-elegant { font-family: 'ZCOOL XiaoWei', serif; }
+
+        /* 增强版纹理背景 */
+        .pattern-overlay {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23f8e5c0' fill-opacity='0.03'%3E%3Cpath d='M30 0L60 30L30 60L0 30z'/%3E%3C/g%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* 增强版 Canvas */
+        #bg-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+        }
+
+        /* 顶部装饰云纹 */
+        .cloud-decoration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            background: linear-gradient(to bottom, rgba(211, 47, 47, 0.1), transparent);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* 增强版玻璃卡片 */
+        .glass-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.85) 100%);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 2px solid rgba(255, 215, 0, 0.4);
+            box-shadow: 
+                0 25px 50px -12px rgba(0, 0, 0, 0.4),
+                0 0 40px rgba(255, 215, 0, 0.1),
+                inset 0 0 30px rgba(255, 255, 255, 0.1);
+        }
+
+        /* 春节装饰边框 */
+        .festive-border {
+            position: relative;
+        }
+        .festive-border::before,
+        .festive-border::after {
+            content: '福';
+            position: absolute;
+            font-size: 24px;
+            color: rgba(211, 47, 47, 0.15);
+            font-family: 'Ma Shan Zheng', cursive;
+            transform: rotate(-15deg);
+        }
+        .festive-border::before { top: 10px; left: 10px; }
+        .festive-border::after { bottom: 10px; right: 10px; transform: rotate(15deg); }
+
+        /* 增强版输入框 */
+        .input-deco {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid transparent;
+            background: linear-gradient(135deg, rgba(255,255,255,0.8), rgba(255,255,255,0.6));
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .input-deco:focus {
+            border-color: rgba(211, 47, 47, 0.5);
+            background: linear-gradient(135deg, rgba(255,255,255,0.95), rgba(255,255,255,0.9));
+            box-shadow: 
+                0 8px 30px rgba(211, 47, 47, 0.15),
+                inset 0 0 20px rgba(211, 47, 47, 0.05);
+            transform: translateY(-2px);
+        }
+
+        /* 增强版印章标签 */
+        .seal-tag {
+            background: linear-gradient(135deg, #B71C1C 0%, #D32F2F 100%);
+            border: 2px solid #FFD700;
+            box-shadow: 
+                0 4px 8px rgba(183, 28, 28, 0.3),
+                inset 0 0 10px rgba(255, 215, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        .seal-tag::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3), transparent);
+        }
+        .seal-tag:active {
+            transform: scale(0.92);
+            box-shadow: 0 2px 4px rgba(183, 28, 28, 0.4);
+        }
+
+        /* 增强版卡片选择 */
+        .style-card {
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-style: preserve-3d;
+        }
+        .style-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .style-card:hover::before {
+            opacity: 1;
+        }
+        .style-card.active {
+            transform: scale(1.15) translateY(-8px);
+            box-shadow: 
+                0 20px 40px -10px rgba(211, 47, 47, 0.4),
+                0 0 30px rgba(255, 215, 0, 0.4);
+            border: 3px solid #FFD700;
+        }
+        .style-card-content {
+            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 100%);
+            backdrop-filter: blur(4px);
+        }
+
+        /* 增强版光效按钮 */
+        @keyframes shine {
+            0% { left: -150%; }
+            100% { left: 150%; }
+        }
+        .btn-shine {
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-shine::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -150%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg, 
+                transparent 0%, 
+                rgba(255,255,255,0) 40%, 
+                rgba(255,255,255,0.4) 50%, 
+                rgba(255,255,255,0) 60%, 
+                transparent 100%
+            );
+            transform: skewX(-20deg);
+            animation: shine 4s infinite;
+        }
+
+        /* 增强版音乐按钮 */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(255, 215, 0, 0.6); }
+        }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .music-spin {
+            animation: spin 6s linear infinite;
+        }
+        .music-btn {
+            background: linear-gradient(135deg, #D32F2F, #B71C1C);
+            border: 3px solid #FFD700;
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        /* 标题动画 */
+        @keyframes title-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .title-animate {
+            animation: title-float 3s ease-in-out infinite;
+        }
+
+        /* 字数统计美化 */
+        .char-count {
+            background: linear-gradient(135deg, rgba(211, 47, 47, 0.1), rgba(255, 215, 0, 0.1));
+            border: 1px solid rgba(211, 47, 47, 0.3);
+            border-radius: 12px;
+        }
+
+        /* 装饰元素 */
+        .decoration-circle {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px dashed rgba(255, 215, 0, 0.3);
+            animation: spin 20s linear infinite;
+        }
+
+        /* 响应式优化 */
+        @media (max-width: 640px) {
+            .glass-card {
+                margin: 60px 12px 20px;
+                padding: 1.5rem;
+            }
+        }
+
+        /* 滚动条隐藏 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="text-gray-800 antialiased">
+    
+    <!-- 动态背景 Canvas -->
+    <canvas id="bg-canvas"></canvas>
+    
+    <!-- 纹理层 -->
+    <div class="pattern-overlay"></div>
+    
+    <!-- 云纹装饰 -->
+    <div class="cloud-decoration"></div>
+
+    <!-- 顶部导航 -->
+    <div class="fixed top-0 w-full z-50 px-4 py-3 flex justify-between items-center pointer-events-none">
+        <div class="pointer-events-auto flex items-center gap-3 cursor-pointer group" @click="goBack">
+            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-red-600/30 to-red-800/30 backdrop-blur-md flex items-center justify-center text-white border border-white/20 group-hover:border-yellow-400 transition-all group-hover:scale-110">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+            </div>
+            <div>
+                <span class="text-white font-bold text-shadow tracking-wider font-brush text-xl title-animate">新春悦换</span>
+                <p class="text-xs text-yellow-200/60 tracking-widest">NEW YEAR EXCHANGE</p>
+            </div>
+        </div>
+        
+        <!-- 音乐按钮 -->
+        <div class="pointer-events-auto cursor-pointer group relative" @click="toggleMusic">
+            <div class="music-btn w-12 h-12 rounded-full flex items-center justify-center shadow-xl transition-transform active:scale-95 music-spin">
+                <svg class="w-6 h-6 text-yellow-100" fill="currentColor" viewBox="0 0 20 20"><path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"/></svg>
+            </div>
+            <div class="absolute -right-2 top-14 bg-black/70 text-white text-xs px-3 py-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-all whitespace-nowrap border border-yellow-400/30">
+                <span class="text-yellow-400">♪</span> 新春乐章
+            </div>
+        </div>
+    </div>
+
+    <div id="app" class="relative z-10 min-h-screen flex flex-col">
+        
+        <!-- 主内容卡片 -->
+        <div class="glass-card mx-auto rounded-3xl festive-border p-6 md:p-10 max-w-lg transform transition-all" style="margin-top: 80px; margin-bottom: 100px;">
+            
+            <!-- 装饰圆环 -->
+            <div class="decoration-circle w-[300px] h-[300px] -top-[150px] -left-[150px] opacity-20"></div>
+            <div class="decoration-circle w-[200px] h-[200px] -bottom-[100px] -right-[100px] opacity-15" style="animation-direction: reverse;"></div>
+
+            <!-- 标题区 -->
+            <div class="text-center mb-10 relative">
+                <div class="absolute -top-4 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-gradient-to-r from-transparent via-yellow-400 to-transparent"></div>
+                <h1 class="text-5xl md:text-6xl font-brush text-transparent bg-clip-text bg-gradient-to-r from-red-700 via-red-600 to-yellow-500 drop-shadow-lg title-animate">
+                    撰写祝福
+                </h1>
+                <div class="flex items-center justify-center gap-3 mt-4">
+                    <div class="h-px flex-1 bg-gradient-to-r from-transparent to-red-300"></div>
+                    <p class="text-sm text-gray-500 tracking-widest font-elegant">墨香寄情 · 福满人间</p>
+                    <div class="h-px flex-1 bg-gradient-to-l from-transparent to-red-300"></div>
+                </div>
+            </div>
+
+            <!-- 表单区 -->
+            <div class="space-y-8 relative">
+                
+                <!-- 昵称输入 -->
+                <div class="group">
+                    <label class="block text-gray-700 font-bold mb-3 flex items-center justify-between">
+                        <span class="flex items-center text-sm uppercase tracking-wider">
+                            <span class="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center mr-2 text-xs font-bold">1</span>
+                            你的昵称
+                        </span>
+                        <span class="text-red-500 text-sm flex items-center gap-1" :class="{ 'opacity-0': form.nickname }">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                            必填 2-10字
+                        </span>
+                    </label>
+                    <div class="relative">
+                        <input 
+                            v-model="form.nickname"
+                            type="text" 
+                            placeholder="请输入您的昵称"
+                            maxlength="10"
+                            class="input-deco w-full p-4 rounded-xl text-lg font-medium outline-none text-gray-800"
+                        >
+                        <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                            <div v-if="form.nickname" class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                            <div class="text-2xl font-brush text-red-900/20 select-none pointer-events-none transition-opacity" :style="{ opacity: form.nickname ? 0.3 : 0 }">
+                                {{form.nickname}}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 祝福内容 -->
+                <div class="group">
+                    <label class="block text-gray-700 font-bold mb-3 flex items-center">
+                        <span class="w-6 h-6 rounded-full bg-yellow-100 text-yellow-700 flex items-center justify-center mr-2 text-xs font-bold">2</span>
+                        <span class="text-sm uppercase tracking-wider">新年寄语</span>
+                    </label>
+                    <div class="relative">
+                        <textarea 
+                            v-model="form.content"
+                            rows="5" 
+                            maxlength="200"
+                            placeholder="写下您对有缘人的新春祝愿，字字珠玑，句句真情..."
+                            class="input-deco w-full p-4 rounded-xl text-gray-700 leading-relaxed resize-none outline-none text-base"
+                        ></textarea>
+                        <div class="absolute bottom-3 right-3 char-count px-2 py-1 text-xs">
+                            <span :class="{'text-red-500': form.content.length >= 200, 'text-gray-500': form.content.length < 200}">
+                                {{form.content.length}}
+                            </span>
+                            <span class="text-gray-400">/200</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 快捷标签 -->
+                    <div class="flex flex-wrap gap-2 mt-4">
+                        <span 
+                            v-for="tag in tags" 
+                            :key="tag" 
+                            @click="fillTemplate(tag)"
+                            class="seal-tag px-4 py-2 rounded-lg text-red-50 text-sm cursor-pointer font-medium hover:scale-105 transition-transform flex items-center gap-1.5"
+                        >
+                            <span class="text-yellow-300 text-lg">✦</span>
+                            {{ tag }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- 卡片风格选择 -->
+                <div>
+                    <label class="block text-gray-700 font-bold mb-4 flex items-center">
+                        <span class="w-6 h-6 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center mr-2 text-xs font-bold">3</span>
+                        <span class="text-sm uppercase tracking-wider">选择祥瑞卡面</span>
+                    </label>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div v-for="(style, index) in styles" :key="index" 
+                             @click="form.style = index"
+                             :class="['style-card h-40 rounded-xl cursor-pointer overflow-hidden relative shadow-lg', form.style === index ? 'active' : 'opacity-80 grayscale-[0.4]']">
+                            
+                            <!-- 背景渐变 -->
+                            <div :class="style.bgClass" class="absolute inset-0"></div>
+                            
+                            <!-- 纹理 -->
+                            <div class="absolute inset-0 pattern-overlay opacity-40"></div>
+                            
+                            <!-- 内容 -->
+                            <div class="absolute inset-0 flex flex-col items-center justify-center style-card-content p-2">
+                                <div class="text-4xl mb-2 transform transition-transform" :class="form.style === index ? 'scale-110' : ''">
+                                    {{ style.icon }}
+                                </div>
+                                <span class="text-xs text-white/90 font-bold tracking-widest border-t border-white/40 pt-1.5 px-2">
+                                    {{ style.name }}
+                                </span>
+                            </div>
+
+                            <!-- 选中标记 -->
+                            <div v-if="form.style === index" class="absolute top-2 right-2 w-5 h-5 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg">
+                                <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部按钮 -->
+        <div class="fixed bottom-0 left-0 w-full p-6 bg-gradient-to-t from-[#1a0507] via-[#2c0b0e]/95 to-transparent z-40">
+            <button 
+                @click="submit"
+                :disabled="!isValid"
+                :class="['w-full max-w-md py-4 rounded-2xl text-lg font-bold shadow-2xl transform transition-all duration-300 flex items-center justify-center gap-3 btn-shine', 
+                         isValid ? 'bg-gradient-to-r from-red-700 via-red-600 to-yellow-600 text-white scale-100 hover:scale-105 hover:shadow-[0_20px_40px_-10px_rgba(211,47,47,0.5)]' : 'bg-gray-500 text-gray-300 scale-95 cursor-not-allowed opacity-50']"
+            >
+                <svg v-if="isValid" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                <span v-if="isValid" class="tracking-wider">投递祝福</span>
+                <span v-else>请完善信息</span>
+                <svg v-if="isValid" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+            </button>
+            <p class="text-center text-xs text-gray-500 mt-3 tracking-wider">✨ 您的祝福将随机匹配一位有缘人</p>
+        </div>
+    </div>
+
+    <script>
+        // --- 增强版 Canvas 动画 ---
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * width;
+                this.y = height + Math.random() * 150;
+                this.speed = 0.3 + Math.random() * 2;
+                this.size = 1.5 + Math.random() * 5;
+                this.opacity = 0.1 + Math.random() * 0.5;
+                this.type = Math.random() > 0.85 ? 'lantern' : 'coin';
+                this.angle = Math.random() * Math.PI * 2;
+                this.spin = (Math.random() - 0.5) * 0.03;
+                this.wobble = Math.random() * 0.02;
+            }
+
+            update() {
+                this.y -= this.speed;
+                this.angle += this.spin;
+                this.x += Math.sin(this.angle * 2) * 0.8 + Math.sin(Date.now() * this.wobble) * 0.5;
+
+                if (this.y < -60) this.reset();
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.opacity;
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+
+                if (this.type === 'coin') {
+                    // 增强版金币效果
+                    const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, this.size);
+                    gradient.addColorStop(0, '#FFF59D');
+                    gradient.addColorStop(0.5, '#FFD700');
+                    gradient.addColorStop(1, '#FF8F00');
+                    
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = gradient;
+                    ctx.shadowBlur = 15 + this.size * 3;
+                    ctx.shadowColor = 'rgba(255, 215, 0, 0.6)';
+                    ctx.fill();
+
+                    // 金币内圈
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size * 0.7, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(255, 243, 224, 0.8)';
+                    ctx.lineWidth = this.size * 0.15;
+                    ctx.stroke();
+                } else {
+                    // 增强版灯笼效果
+                    const glowGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, this.size * 3);
+                    glowGradient.addColorStop(0, 'rgba(255, 69, 0, 0.4)');
+                    glowGradient.addColorStop(1, 'transparent');
+                    ctx.fillStyle = glowGradient;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size * 3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // 灯笼主体
+                    const bodyGradient = ctx.createLinearGradient(-this.size, 0, this.size, 0);
+                    bodyGradient.addColorStop(0, '#D32F2F');
+                    bodyGradient.addColorStop(0.5, '#FF5252');
+                    bodyGradient.addColorStop(1, '#B71C1C');
+                    
+                    ctx.fillStyle = bodyGradient;
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = '#FF6B6B';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, this.size * 2.2, this.size * 1.8, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // 灯笼骨架
+                    ctx.strokeStyle = 'rgba(255, 215, 0, 0.6)';
+                    ctx.lineWidth = this.size * 0.1;
+                    for (let i = -2; i <= 2; i++) {
+                        ctx.beginPath();
+                        ctx.moveTo(i * this.size * 0.8, -this.size * 1.5);
+                        ctx.quadraticCurveTo(i * this.size * 0.9, 0, i * this.size * 0.8, this.size * 1.5);
+                        ctx.stroke();
+                    }
+
+                    // 灯芯
+                    const coreGradient = ctx.createRadialGradient(0, 0, 0, 0, 0, this.size * 0.6);
+                    coreGradient.addColorStop(0, '#FFD700');
+                    coreGradient.addColorStop(0.6, '#FF8F00');
+                    coreGradient.addColorStop(1, 'transparent');
+                    ctx.fillStyle = coreGradient;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size * 0.6, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        function initParticles() {
+            for(let i = 0; i < 80; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            
+            // 背景渐变
+            const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+            bgGradient.addColorStop(0, '#2c0b0e');
+            bgGradient.addColorStop(0.5, '#1a0507');
+            bgGradient.addColorStop(1, '#0f0204');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, width, height);
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        initParticles();
+        animate();
+
+        // --- Vue 应用 ---
+        const { createApp, ref, computed } = Vue;
+        const app = createApp({
+            setup() {
+                const form = ref({
+                    nickname: '',
+                    content: '',
+                    style: 0
+                });
+
+                const tags = ['万事顺遂', '升职加薪', '平安喜乐', '财源广进', '身体健康', '学业有成', '心想事成', '阖家欢乐'];
+
+                const styles = [
+                    { name: '鸿运当头', bgClass: 'bg-gradient-to-br from-red-600 via-red-700 to-red-900', icon: '🧧' },
+                    { name: '金碧辉煌', bgClass: 'bg-gradient-to-br from-yellow-500 via-yellow-600 to-yellow-800', icon: '💰' },
+                    { name: '水墨雅韵', bgClass: 'bg-gradient-to-br from-gray-600 via-gray-700 to-gray-900', icon: '🏔️' }
+                ];
+
+                const isValid = computed(() => {
+                    return form.value.nickname.trim().length >= 2 && form.value.content.trim().length > 0;
+                });
+
+                const fillTemplate = (text) => {
+                    form.value.content = form.value.content ? form.value.content + "，" + text : text;
+                    setTimeout(() => document.querySelector('textarea').focus(), 100);
+                };
+
+                const goBack = () => window.history.back();
+
+                const toggleMusic = () => {
+                    const icon = document.querySelector('.music-spin');
+                    if (icon.style.animationPlayState === 'paused') {
+                        icon.style.animationPlayState = 'running';
+                        vant.showToast({ message: '🎵 新春乐章已开启', position: 'top', icon: 'success' });
+                    } else {
+                        icon.style.animationPlayState = 'paused';
+                        vant.showToast({ message: '⏸️ 音乐已暂停', position: 'top' });
+                    }
+                };
+
+                const submit = () => {
+                    if (!isValid.value) return;
+                    vant.showLoadingToast({
+                        message: '正在祈福投递...',
+                        forbidClick: true,
+                        duration: 1800
+                    });
+                    
+                    setTimeout(() => {
+                        localStorage.setItem('my_nickname', form.value.nickname);
+                        localStorage.setItem('card_style', form.value.style);
+                        localStorage.setItem('card_content', form.value.content);
+                        window.location.href = 'match_beautified.html';
+                    }, 1500);
+                };
+
+                return { form, styles, tags, isValid, goBack, submit, fillTemplate, toggleMusic };
+            }
+        });
+        app.use(vant);
+        app.mount('#app');
+    </script>
+</body>
+</html>

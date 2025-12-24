@@ -1,5 +1,5 @@
 import Router from 'koa-router'
-import { insertCard, findByUUID, getCandidates, updateMatch, getCardById, stats, getSystemBot, getConfig } from '../models/db.js'
+import { insertCard, findByUUID, getCandidates, updateMatch, getCardById, stats, getSystemBot, getConfig, getWallCards } from '../models/db.js'
 import { SHARED_STYLES } from '../constants/shared_styles.js'
 import filter from '../utils/SensitiveFilter.js'
 
@@ -15,6 +15,13 @@ router.get('/common/dict', async ctx => {
 
 router.get('/stats', async ctx => {
   ctx.body = { code: 0, data: stats() }
+})
+
+router.get('/card/wall', async ctx => {
+  const limit = ctx.query.limit
+  const rows = getWallCards(limit)
+  ctx.set('Cache-Control', 'no-store')
+  ctx.body = { code: 0, data: rows }
 })
 
 router.post('/card', async ctx => {
@@ -54,7 +61,11 @@ router.get('/card/my', async ctx => {
   const uuid = ctx.query.uuid
   if (!uuid) { ctx.status = 400; ctx.body = { code: 1, message: '缺少uuid' }; return }
   const self = findByUUID(uuid)
-  if (!self) { ctx.status = 404; ctx.body = { code: 1, message: '未找到' }; return }
+  if (!self) {
+    ctx.set('Cache-Control', 'no-store')
+    ctx.body = { code: 0, data: { status: 'NOT_FOUND' } }
+    return
+  }
 
   // Check if matched
   if (self.status === 1 && self.target_card_id) {

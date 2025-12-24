@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新年祝福墙 - 增强版</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <style>
+        /* ================= 基础变量与重置 ================= */
+        :root {
+            --primary-red: #c41e3a;
+            --bg-dark-red: #5e0e1c;
+            --gold: #ffd700;
+            --paper-light: #fffbf0;
+            --paper-red: #fff0f0;
+            --shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: "Noto Serif SC", "Songti SC", serif;
+        }
+
+        /* ================= 背景层 ================= */
+        #app {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        /* 动态云纹背景 */
+        .cloud-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #5e0e1c, #8b1a2e);
+            z-index: -2;
+        }
+
+        /* 云纹动画层 */
+        .cloud-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://t1.chatglm.cn/file/694a14f9ea7a889f596cd614.png?expired_at=1766894720&sign=2553a9932868d8b4314c8893be546829&ext=png');
+            background-size: 300px 300px;
+            background-repeat: repeat;
+            opacity: 0.15;
+            animation: cloudFloat 30s linear infinite;
+            z-index: -1;
+        }
+
+        /* 云纹飘动动画 */
+        @keyframes cloudFloat {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(100px, -100px) rotate(5deg); }
+        }
+
+        /* 烟雾粒子效果 */
+        .smoke-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        /* ================= 祝福卡片样式 ================= */
+        .blessing-wall {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .blessing-card {
+            position: absolute;
+            width: 180px;
+            padding: 15px;
+            background: var(--paper-light);
+            border: 1px solid var(--gold);
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+            color: #5e0e1c;
+            font-size: 14px;
+            line-height: 1.4;
+            text-align: center;
+            cursor: pointer;
+            pointer-events: auto;
+            user-select: none;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            outline: 3px double rgba(196, 30, 58, 0.2);
+            outline-offset: -4px;
+            animation: cardAppear 0.6s ease-out;
+        }
+
+        /* 卡片出现动画 */
+        @keyframes cardAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.5) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .blessing-card:hover {
+            z-index: 999 !important;
+            transform: scale(1.1) !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            background: #fff;
+        }
+
+        .blessing-card.pinned {
+            border-color: var(--primary-red);
+            background-color: #fff5f5;
+            box-shadow: 0 0 15px var(--primary-red);
+        }
+        
+        .blessing-card.pinned::after {
+            content: "📌";
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 16px;
+        }
+
+        .card-text { margin-bottom: 8px; font-weight: bold; }
+        .card-from { font-size: 12px; color: #888; font-style: italic; }
+
+        /* 不同颜色的卡片变体 */
+        .card-style-1 { background: #fff; }
+        .card-style-2 { background: #fffbf0; border-color: #daa520; }
+        .card-style-3 { background: #fff0f5; border-color: #db7093; color: #8b0a50; }
+
+        /* ================= 装饰元素 ================= */
+        .decoration {
+            position: absolute;
+            opacity: 0.2;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .lantern {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle, #ff6b6b, #c41e3a);
+            border-radius: 50%;
+            box-shadow: 0 0 20px #ff6b6b;
+            animation: lanternGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes lanternGlow {
+            0%, 100% { box-shadow: 0 0 20px #ff6b6b; }
+            50% { box-shadow: 0 0 30px #ff6b6b, 0 0 40px #ff6b6b; }
+        }
+
+        .ingot {
+            position: absolute;
+            width: 60px;
+            height: 30px;
+            background: linear-gradient(90deg, #ffd700, #ffed4e);
+            border-radius: 5px;
+            transform: rotate(45deg);
+            animation: ingotShine 4s ease-in-out infinite;
+        }
+
+        @keyframes ingotShine {
+            0%, 100% { transform: rotate(45deg) scale(1); }
+            50% { transform: rotate(45deg) scale(1.1); }
+        }
+
+        /* ================= Vue 动画 ================= */
+        .list-enter-active {
+            transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .list-leave-active {
+            transition: all 0.6s ease-in;
+        }
+        .list-enter-from {
+            opacity: 0;
+            transform: scale(0.5) translateY(20px);
+        }
+        .list-leave-to {
+            opacity: 0;
+            transform: scale(0.8) translateY(-20px);
+        }
+
+        /* ================= 底部控制面板 ================= */
+        .control-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 20px;
+            border-radius: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+            align-items: center;
+        }
+
+        .control-btn {
+            border: none;
+            background: var(--primary-red);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .control-btn:hover { background: #a01830; transform: translateY(-2px); }
+        .control-btn.secondary { background: #666; }
+        .control-btn.secondary:hover { background: #444; }
+
+        .status-text {
+            color: #333;
+            font-size: 14px;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        /* ================= 标题装饰 ================= */
+        .title-decoration {
+            position: absolute;
+            top: 5%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--gold);
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .main-title {
+            font-size: 4rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.2rem;
+            font-weight: bold;
+            animation: titleGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes titleGlow {
+            0%, 100% { text-shadow: 0 0 20px rgba(255, 215, 0, 0.5); }
+            50% { text-shadow: 0 0 30px rgba(255, 215, 0, 0.8), 0 0 40px rgba(255, 215, 0, 0.4); }
+        }
+
+        .sub-title {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 300;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- 背景层 -->
+    <div class="cloud-background"></div>
+    <div class="cloud-overlay"></div>
+    
+    <!-- 装饰元素 -->
+    <div class="decoration lantern" style="top: 10%; left: 10%;"></div>
+    <div class="decoration lantern" style="top: 15%; right: 15%;"></div>
+    <div class="decoration ingot" style="top: 20%; left: 30%;"></div>
+    <div class="decoration ingot" style="top: 25%; right: 25%;"></div>
+
+    <!-- 标题装饰 -->
+    <div class="title-decoration">
+        <h1 class="main-title">福满乾坤</h1>
+        <p class="sub-title">New Year Blessings Wall</p>
+    </div>
+
+    <!-- 祝福墙容器 -->
+    <transition-group name="list" tag="div" class="blessing-wall">
+        <div 
+            v-for="item in blessings" 
+            :key="item.id"
+            class="blessing-card"
+            :class="['card-style-' + item.styleIndex, { pinned: item.isPinned }]"
+            :style="{ 
+                top: item.top + '%', 
+                left: item.left + '%', 
+                transform: `rotate(${item.rotation}deg)`,
+                zIndex: item.zIndex 
+            }"
+            @click.stop="togglePin(item)"
+            title="点击可以固定/取消固定"
+        >
+            <div class="card-text">{{ item.text }}</div>
+            <div class="card-from">{{ item.from }}</div>
+        </div>
+    </transition-group>
+
+    <!-- 底部控制栏 -->
+    <div class="control-panel">
+        <button class="control-btn" @click="toggleGenerator">
+            {{ isGenerating ? '暂停生成' : '继续生成' }}
+        </button>
+        <div class="status-text">
+            屏幕祝福: {{ blessings.length }} 条
+        </div>
+        <button class="control-btn secondary" @click="clearAll">
+            清空屏幕
+        </button>
+    </div>
+</div>
+
+<script>
+    const { createApp, ref, onMounted, onUnmounted } = Vue;
+
+    createApp({
+        setup() {
+            const blessings = ref([]);
+            const isGenerating = ref(true);
+            let generatorTimer = null;
+            let idCounter = 0;
+
+            const blessingDatabase = [
+                { text: "新年快乐，万事胜意！", from: "Vue Team" },
+                { text: "龙年大吉，财源广进。", from: "Finance" },
+                { text: "岁岁平安，年年有余。", from: "Family" },
+                { text: "心想事成，好运连连。", from: "Friend" },
+                { text: "前程似锦，未来可期。", from: "School" },
+                { text: "身体健康，吃嘛嘛香。", from: "Health" },
+                { text: "Code bug-free, Deploy smooth.", from: "DevOps" },
+                { text: "日进斗金，暴富暴瘦。", from: "Dream" },
+                { text: "阖家幸福，团圆美满。", from: "Home" },
+                { text: "春风得意，马到成功。", from: "Boss" }
+            ];
+
+            const createBlessing = () => {
+                const randomMsg = blessingDatabase[Math.floor(Math.random() * blessingDatabase.length)];
+                const top = Math.floor(Math.random() * 80) + 5;
+                const left = Math.floor(Math.random() * 85) + 5;
+                const rotation = Math.floor(Math.random() * 20) - 10;
+                const zIndex = Math.floor(Math.random() * 50) + 1;
+
+                const newBlessing = {
+                    id: idCounter++,
+                    text: randomMsg.text,
+                    from: randomMsg.from,
+                    top: top,
+                    left: left,
+                    rotation: rotation,
+                    zIndex: zIndex,
+                    styleIndex: Math.floor(Math.random() * 3) + 1,
+                    isPinned: false
+                };
+
+                blessings.value.push(newBlessing);
+
+                const lifeTimer = setTimeout(() => {
+                    removeBlessing(newBlessing.id);
+                }, 5000);
+
+                newBlessing.timer = lifeTimer;
+            };
+
+            const removeBlessing = (id) => {
+                const index = blessings.value.findIndex(b => b.id === id);
+                if (index !== -1) {
+                    blessings.value.splice(index, 1);
+                }
+            };
+
+            const togglePin = (item) => {
+                if (item.isPinned) {
+                    item.isPinned = false;
+                    item.timer = setTimeout(() => removeBlessing(item.id), 5000);
+                } else {
+                    item.isPinned = true;
+                    if (item.timer) clearTimeout(item.timer);
+                }
+            };
+
+            const startGenerator = () => {
+                createBlessing();
+                generatorTimer = setInterval(createBlessing, 800);
+                isGenerating.value = true;
+            };
+
+            const stopGenerator = () => {
+                if (generatorTimer) {
+                    clearInterval(generatorTimer);
+                    generatorTimer = null;
+                }
+                isGenerating.value = false;
+            };
+
+            const toggleGenerator = () => {
+                if (isGenerating.value) {
+                    stopGenerator();
+                } else {
+                    startGenerator();
+                }
+            };
+
+            const clearAll = () => {
+                blessings.value.forEach(b => {
+                    if (b.timer) clearTimeout(b.timer);
+                });
+                blessings.value = [];
+            };
+
+            onMounted(() => {
+                startGenerator();
+            });
+
+            onUnmounted(() => {
+                stopGenerator();
+                clearAll();
+            });
+
+            return {
+                blessings,
+                isGenerating,
+                toggleGenerator,
+                clearAll,
+                togglePin
+            };
+        }
+    }).mount('#app');
+</script>
+
+</body>
+</html>

@@ -215,6 +215,25 @@ export function getAllCards(page = 1, limit = 20) {
   return { rows, total }
 }
 
+export function getWallCards(limit = 200) {
+  const safeLimit = Math.max(1, Math.min(500, Number(limit) || 200))
+  const stmt = db.prepare(`
+    SELECT uuid, nickname, content, style_id, created_at
+    FROM cards
+    WHERE is_removed = 0
+      AND uuid != 'system_bot'
+    ORDER BY created_at DESC
+    LIMIT ?
+  `)
+  stmt.bind([safeLimit])
+  const rows = []
+  while (stmt.step()) {
+    rows.push(stmt.getAsObject())
+  }
+  stmt.free()
+  return rows
+}
+
 export function removeCard(id) {
   db.run(`UPDATE cards SET is_removed=1 WHERE id=${id}`)
   save()

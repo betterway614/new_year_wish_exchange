@@ -154,17 +154,13 @@ function goWishWall() {
 }
 
 function resendWish() {
-  showToast({
-    message: '已经发送新的祝福',
-    type: 'success',
-  });
-  
+ 
   setTimeout(() => {
-    if (confirm('确定要重新开始吗？当前的祝福记录将被清除。')) {
+    if (confirm('前往编写新的祝福')) {
         store.resetState()
         router.push('/write')
     }
-  }, 1000)
+  }, 100)
 }
 </script>
 
