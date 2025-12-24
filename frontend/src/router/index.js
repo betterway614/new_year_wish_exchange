@@ -27,6 +27,7 @@ const routes = [
     meta: { requiresMatched: true }
   },
   { path: '/admin/login', name: 'adminLogin', component: AdminLogin },
+  { path: '/wish-wall', name: 'wishWall', component: () => import('../views/WishWall.vue') },
   { 
     path: '/admin', 
     component: AdminLayout,

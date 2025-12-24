@@ -14,7 +14,12 @@ instance.interceptors.request.use(config => {
 })
 
 instance.interceptors.response.use(
-  res => res.data,
+  res => {
+    if (typeof res.data === 'string' && res.data.trim().startsWith('<')) {
+      return Promise.reject(new Error('网络连接异常：后端服务不可达 (Proxy Error)'))
+    }
+    return res.data
+  },
   err => {
     let message = '请求失败，请稍后重试'
     if (err.response) {

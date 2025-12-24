@@ -52,13 +52,14 @@ export const useUserStore = defineStore('user', {
       this.style_id = 0
       this.match_data = null
       this.is_submitted = false
+      this.uuid = '' // Clear UUID to allow new identity
       
       localStorage.removeItem('form_nickname')
       localStorage.removeItem('form_content')
       localStorage.removeItem('form_style_id')
       localStorage.removeItem('match_data')
       localStorage.removeItem('is_submitted')
-      // uuid 不清除，保持用户身份
+      localStorage.removeItem('uuid')
     },
     async submitCard() {
       if (!this.uuid) this.ensureUUID()
@@ -73,7 +74,8 @@ export const useUserStore = defineStore('user', {
     },
     async checkMatchStatus() {
       if (!this.uuid) return null
-      const res = await request.get(`/card/my`, { params: { uuid: this.uuid } })
+      // Add timestamp to prevent caching
+      const res = await request.get(`/card/my`, { params: { uuid: this.uuid, t: Date.now() } })
       const data = res?.data
       if (data?.status === 'MATCHED') {
         this.setMatched(data)

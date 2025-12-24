@@ -24,17 +24,13 @@ body { margin: 0; padding: 0; }
 
 .app-root {
   min-height: 100vh;
-  background: #0f0f0f;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 100%;
+  background: #FFF9F0;
 }
 .viewport {
   width: 100%;
-  max-width: 480px;
   min-height: 100vh;
   background: #FFF9F0;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 </style>
 
