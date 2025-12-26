@@ -32,7 +32,15 @@
           title="点击可以固定/取消固定"
         >
           <div class="card-text">{{ item.text }}</div>
-          <div class="card-from">—— {{ item.from }}</div>
+          
+          <div class="card-footer-row">
+            <div class="card-from">—— {{ item.from }}</div>
+            
+            <div class="like-btn" @click.stop="handleLike(item)">
+              <span class="heart-icon" :class="{ 'liked': item.hasLiked }">♥</span>
+              <span class="like-count">{{ item.likes || 0 }}</span>
+            </div>
+          </div>
         </div>
       </transition-group>
     </div>
@@ -53,12 +61,20 @@
         返回
       </button>
     </div>
+
+    <transition name="fade">
+      <div v-if="toastMsg" class="toast-message">{{ toastMsg }}</div>
+    </transition>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import request from '../utils/request'
+import { useUserStore } from '../stores/user'
+
+const userStore = useUserStore()
+const toastMsg = ref('')
 
 // === 缩放与布局核心逻辑 ===
 const DESIGN_WIDTH = 1200 
@@ -154,6 +170,7 @@ const createBlessing = () => {
 
   const newBlessing = {
     id: idCounter++,
+    realId: randomMsg.id || 0,
     text: randomMsg.content,
     from: randomMsg.nickname,
     top: top,
@@ -162,7 +179,9 @@ const createBlessing = () => {
     zIndex: zIndex,
     styleIndex: normalizeStyleIndex(randomMsg.style_id),
     isPinned: false,
-    timer: null
+    timer: null,
+    likes: randomMsg.likes || 0,
+    hasLiked: false
   }
 
   blessings.value.push(newBlessing)
@@ -228,6 +247,43 @@ const clearAll = () => {
   blessings.value = [];
 };
 
+const handleLike = async (item) => {
+  userStore.ensureUUID()
+  const uuid = userStore.uuid
+
+  if (item.hasLiked) {
+    showToast('您已经赞过了哟')
+    return
+  }
+
+  try {
+    const cardId = item.realId
+
+    const res = await request.post(`/card/${cardId}/like`, { uuid })
+
+    if (res.code === 0) {
+      item.likes = res.data.likes
+      item.hasLiked = true
+      showToast('点赞成功 +1 ❤️')
+    } else if (res.code === 20001) {
+      item.hasLiked = true
+      showToast(res.message)
+    } else {
+      showToast(res.message || '操作失败')
+    }
+  } catch (e) {
+    console.error(e)
+    showToast('网络开小差了')
+  }
+}
+
+const showToast = (msg) => {
+  toastMsg.value = msg
+  setTimeout(() => {
+    toastMsg.value = ''
+  }, 2000)
+}
+
 onMounted(async () => {
   updateScale()
   window.addEventListener('resize', updateScale)
@@ -291,7 +347,7 @@ onUnmounted(() => {
   left: 0;
   width: 100%; /* 始终覆盖全屏 */
   height: 100%;
-  background-image: url('https://t1.chatglm.cn/file/694a14f9ea7a889f596cd614.png?expired_at=1766894720&sign=2553a9932868d8b4314c8893be546829&ext=png');
+  background-image: url('../../resource/image/cloud.png');
   background-size: 500px 500px; /* 增大尺寸减少重复感 */
   background-repeat: repeat;
   opacity: 0.12;
@@ -488,6 +544,75 @@ onUnmounted(() => {
 
 .card-text { margin-bottom: 8px; font-weight: bold; }
 .card-from { font-size: 14px; color: #888; font-style: italic; }
+
+.card-footer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(196, 30, 58, 0.1);
+}
+
+.like-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 12px;
+  transition: all 0.2s;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.like-btn:hover {
+  background: rgba(255, 240, 240, 0.8);
+  transform: scale(1.1);
+}
+
+.heart-icon {
+  font-size: 18px;
+  color: #ccc;
+  transition: color 0.3s;
+}
+
+.heart-icon.liked {
+  color: #c41e3a;
+  animation: heartPop 0.4s ease-out;
+}
+
+.like-count {
+  font-size: 14px;
+  color: #5e0e1c;
+  font-weight: bold;
+}
+
+@keyframes heartPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+
+.toast-message {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  z-index: 99999;
+  font-size: 16px;
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
 
 .card-style-1 { background: #fff; }
 .card-style-2 { background: #fffbf0; border-color: #daa520; }

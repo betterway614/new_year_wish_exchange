@@ -2,8 +2,9 @@
   <div class="home-page min-h-screen relative flex flex-col items-center justify-between py-8 overflow-hidden text-white">
     
     <!-- 背景层 -->
-    <div class="absolute inset-0 pattern-cloud pointer-events-none z-0"></div>
-    <div class="absolute inset-0 bg-gradient-overlay pointer-events-none z-0"></div>
+    <div class="cloud-background"></div>
+    <div class="cloud-overlay"></div>
+
 
     <!-- 动态粒子层 (红包/金元宝/烟花) -->
     <div v-for="p in particles" :key="p.id" 
@@ -176,14 +177,33 @@ function handleMainAction() {
 }
 
 /* 祥云背景 */
-.pattern-cloud {
-    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23f8e5c0' fill-opacity='0.1'%3E%3Cpath d='M30 0L60 30L30 60L0 30z'/%3E%3C/g%3E%3C/svg%3E");
-    background-size: 60px 60px;
-    opacity: 0.3;
+.cloud-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #5e0e1c, #8b1a2e); /* 深红渐变 */
+  z-index: -2;
 }
 
-.bg-gradient-overlay {
-    background: linear-gradient(to top, rgba(0,0,0,0.4), transparent, rgba(0,0,0,0.2));
+.cloud-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url('https://t1.chatglm.cn/file/694a14f9ea7a889f596cd614.png?expired_at=1766894720&sign=2553a9932868d8b4314c8893be546829&ext=png') ;
+  background-size: 500px 500px;
+  background-repeat: repeat;
+  opacity: 0.12;
+  animation: cloudLoop 60s linear infinite;
+  z-index: -1;
+}
+
+@keyframes cloudLoop {
+  0% { background-position: 0 0; }
+  100% { background-position: 500px -500px; }
 }
 
 /* 粒子 */

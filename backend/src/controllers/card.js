@@ -1,5 +1,5 @@
 import Router from 'koa-router'
-import { insertCard, findByUUID, getCandidates, updateMatch, getCardById, stats, getSystemBot, getConfig, getWallCards } from '../models/db.js'
+import { insertCard, findByUUID, getCandidates, updateMatch, getCardById, stats, getSystemBot, getConfig, getWallCards, likeCard } from '../models/db.js'
 import { SHARED_STYLES } from '../constants/shared_styles.js'
 import filter from '../utils/SensitiveFilter.js'
 
@@ -202,6 +202,30 @@ router.get('/card/my', async ctx => {
   }
 
   ctx.body = { code: 0, data: { status: 'WAITING' } }
+})
+
+router.post('/card/:id/like', async ctx => {
+  const cardId = ctx.params.id
+  const { uuid } = ctx.request.body
+  
+  if (!uuid) {
+    ctx.status = 400
+    ctx.body = { code: 1, message: '缺少用户凭证' }
+    return
+  }
+
+  const result = likeCard(cardId, uuid)
+
+  if (result.success) {
+    ctx.body = { code: 0, data: { likes: result.newCount } }
+  } else {
+    if (result.reason === 'ALREADY_LIKED') {
+      ctx.body = { code: 20001, message: '您已经赞过了哟' }
+    } else {
+      ctx.status = 500
+      ctx.body = { code: 1, message: '系统繁忙' }
+    }
+  }
 })
 
 export default router

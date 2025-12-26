@@ -50,6 +50,7 @@ function ensureSchema() {
   try { db.run(`ALTER TABLE cards ADD COLUMN last_match_time DATETIME`) } catch (e) {}
   try { db.run(`ALTER TABLE cards ADD COLUMN match_partner TEXT`) } catch (e) {}
   try { db.run(`ALTER TABLE cards ADD COLUMN target_person TEXT`) } catch (e) {}
+  try { db.run(`ALTER TABLE cards ADD COLUMN likes INTEGER DEFAULT 0`) } catch (e) {}
 
   // Admins Table
   db.run(`
@@ -77,6 +78,17 @@ function ensureSchema() {
       user_card_id INTEGER,
       target_card_id INTEGER,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `)
+
+  // Card Likes Table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS card_likes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      card_id INTEGER NOT NULL,
+      user_uuid TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(card_id, user_uuid)
     );
   `)
 
@@ -275,7 +287,7 @@ export function getAllCards(page = 1, limit = 20) {
 export function getWallCards(limit = 200) {
   const safeLimit = Math.max(1, Math.min(500, Number(limit) || 200))
   const stmt = db.prepare(`
-    SELECT uuid, nickname, content, style_id, created_at
+    SELECT id, uuid, nickname, content, style_id, created_at, likes
     FROM cards
     WHERE is_removed = 0
       AND uuid != 'system_bot'
@@ -442,5 +454,31 @@ export function clearDatabase() {
     db.run('ROLLBACK')
     console.error('Clear DB Error:', err)
     return { success: false, message: err.message }
+  }
+}
+
+export function likeCard(cardId, userUuid) {
+  try {
+    db.run('BEGIN TRANSACTION')
+    
+    const stmt = db.prepare(`INSERT INTO card_likes (card_id, user_uuid) VALUES (?, ?)`)
+    stmt.run([cardId, userUuid])
+    stmt.free()
+
+    db.run(`UPDATE cards SET likes = likes + 1 WHERE id = ${cardId}`)
+    
+    const res = db.exec(`SELECT likes FROM cards WHERE id = ${cardId}`)
+    const newCount = res[0]?.values?.[0]?.[0] || 0
+
+    db.run('COMMIT')
+    save()
+    return { success: true, newCount }
+  } catch (err) {
+    db.run('ROLLBACK')
+    if (err.message.includes('UNIQUE constraint failed')) {
+      return { success: false, reason: 'ALREADY_LIKED' }
+    }
+    console.error(err)
+    return { success: false, reason: 'ERROR' }
   }
 }
