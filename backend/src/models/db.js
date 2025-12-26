@@ -5,10 +5,14 @@ import bcrypt from 'bcryptjs'
 
 const dataDir = path.join(process.cwd(), 'data')
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true })
-const dbPath = path.join(dataDir, 'cards.sqlite')
 let SQL = null
 let db = null
 let saveTimeout = null
+
+function getDBPath() {
+  const filename = process.env.NODE_ENV === 'test' ? 'cards.test.sqlite' : 'cards.sqlite'
+  return path.join(dataDir, filename)
+}
 
 // Debounced save to improve performance
 function save() {
@@ -16,7 +20,7 @@ function save() {
   saveTimeout = setTimeout(() => {
     try {
       const data = Buffer.from(db.export())
-      fs.writeFileSync(dbPath, data)
+      fs.writeFileSync(getDBPath(), data)
     } catch (err) {
       console.error('Save failed:', err)
     }
@@ -45,6 +49,7 @@ function ensureSchema() {
   try { db.run(`ALTER TABLE cards ADD COLUMN weight INTEGER DEFAULT 1`) } catch (e) {}
   try { db.run(`ALTER TABLE cards ADD COLUMN last_match_time DATETIME`) } catch (e) {}
   try { db.run(`ALTER TABLE cards ADD COLUMN match_partner TEXT`) } catch (e) {}
+  try { db.run(`ALTER TABLE cards ADD COLUMN target_person TEXT`) } catch (e) {}
 
   // Admins Table
   db.run(`
@@ -103,10 +108,37 @@ function ensureSchema() {
     db.run(`INSERT INTO system_config (key, value) VALUES ('matching_enabled', 'true')`)
     save()
   }
+
+  try {
+    const stmt = db.prepare(`
+      SELECT id, target_card_id
+      FROM cards
+      WHERE status = 1
+        AND target_card_id IS NOT NULL
+        AND (target_person IS NULL OR target_person = '')
+    `)
+    const rows = []
+    while (stmt.step()) rows.push(stmt.getAsObject())
+    stmt.free()
+
+    if (rows.length > 0) {
+      const getNick = db.prepare(`SELECT nickname FROM cards WHERE id = ?`)
+      const setTarget = db.prepare(`UPDATE cards SET target_person = ? WHERE id = ?`)
+      for (const r of rows) {
+        const nickObj = getNick.getAsObject([r.target_card_id])
+        const nick = nickObj?.nickname || ''
+        if (nick) setTarget.run([nick, r.id])
+      }
+      getNick.free()
+      setTarget.free()
+      save()
+    }
+  } catch (e) {}
 }
 
 export async function initDB() {
   if (!SQL) SQL = await initSqlJs()
+  const dbPath = getDBPath()
   if (fs.existsSync(dbPath)) {
     const filebuffer = fs.readFileSync(dbPath)
     db = new SQL.Database(filebuffer)
@@ -179,15 +211,29 @@ export function updateMatch(userAId, userBId) {
   
   // Update User A: Set target to B, status to 1, update last_match_time, and match_partner
   const partnerName = target ? target.nickname : 'Unknown'
-  db.run(`UPDATE cards SET target_card_id=${userBId}, status=1, last_match_time='${now}', match_partner='${partnerName}' WHERE id=${userAId}`)
+  const stmtA = db.prepare(`
+    UPDATE cards
+    SET target_card_id = ?,
+        status = 1,
+        last_match_time = ?,
+        match_partner = ?,
+        target_person = ?
+    WHERE id = ?
+  `)
+  stmtA.run([userBId, now, partnerName, partnerName, userAId])
+  stmtA.free()
   
   // Update User B: Set matched_by to A
   if (target && target.uuid !== 'system_bot') {
-    db.run(`UPDATE cards SET matched_by_card_id=${userAId} WHERE id=${userBId}`)
+    const stmtB = db.prepare(`UPDATE cards SET matched_by_card_id = ? WHERE id = ?`)
+    stmtB.run([userAId, userBId])
+    stmtB.free()
   }
 
   // Log
-  db.run(`INSERT INTO match_logs (user_card_id, target_card_id) VALUES (${userAId}, ${userBId})`)
+  const stmtLog = db.prepare(`INSERT INTO match_logs (user_card_id, target_card_id) VALUES (?, ?)`)
+  stmtLog.run([userAId, userBId])
+  stmtLog.free()
   
   save()
 }
@@ -201,17 +247,28 @@ export function getCardById(id) {
 
 export function getAllCards(page = 1, limit = 20) {
   const offset = (page - 1) * limit
-  const stmt = db.prepare(`SELECT * FROM cards WHERE is_removed=0 ORDER BY created_at DESC LIMIT ? OFFSET ?`)
+  const stmt = db.prepare(`
+    SELECT
+      c.*,
+      COALESCE(deliver.nickname, '') AS delivered_to_nickname,
+      COALESCE(NULLIF(c.target_person, ''), receive.nickname, '') AS received_from_nickname
+    FROM cards c
+    LEFT JOIN cards deliver ON deliver.id = c.matched_by_card_id
+    LEFT JOIN cards receive ON receive.id = c.target_card_id
+    WHERE c.is_removed = 0
+    ORDER BY c.created_at DESC
+    LIMIT ? OFFSET ?
+  `)
   stmt.bind([limit, offset])
   const rows = []
   while (stmt.step()) {
     rows.push(stmt.getAsObject())
   }
   stmt.free()
-  
+
   const res = db.exec(`SELECT COUNT(*) FROM cards WHERE is_removed=0`)
   const total = res[0]?.values?.[0]?.[0] || 0
-  
+
   return { rows, total }
 }
 
@@ -316,4 +373,74 @@ export function getAllDataForExport() {
   }
   stmt.free()
   return rows
+}
+
+export function batchImportCards(cards) {
+  if (!cards || cards.length === 0) return { success: true, count: 0 }
+  
+  try {
+    db.run('BEGIN TRANSACTION')
+    const stmt = db.prepare(`
+      INSERT INTO cards (uuid, nickname, content, style_id, status, weight, created_at)
+      VALUES (?, ?, ?, ?, 0, 1, ?)
+      ON CONFLICT(uuid) DO UPDATE SET 
+        nickname=excluded.nickname, 
+        content=excluded.content, 
+        style_id=excluded.style_id
+    `)
+
+    let count = 0
+    const now = new Date().toISOString()
+
+    for (const card of cards) {
+      // 如果没有 UUID，生成一个随机的
+      const uuid = card.uuid || 'imp_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36)
+      const nickname = card.nickname || 'Unknown'
+      const content = card.content || ''
+      const styleId = Number(card.style_id) || 0
+      const createdAt = card.created_at || now
+
+      // 简单校验
+      if (!content) continue
+
+      stmt.run([uuid, nickname, content, styleId, createdAt])
+      count++
+    }
+    
+    stmt.free()
+    db.run('COMMIT')
+    save()
+    return { success: true, count }
+  } catch (err) {
+    db.run('ROLLBACK')
+    console.error('Import Error:', err)
+    return { success: false, message: err.message }
+  }
+}
+
+// === 新增：清空数据库 (保留系统机器人) ===
+export function clearDatabase() {
+  try {
+    db.run('BEGIN TRANSACTION')
+    
+    // 1. 删除所有匹配日志
+    db.run(`DELETE FROM match_logs`)
+    
+    // 2. 物理删除所有卡片 (除了系统机器人)
+    // 注意：这里使用物理删除(DELETE)而不是软删除(is_removed=1)，是为了彻底释放空间和 UUID
+    db.run(`DELETE FROM cards WHERE uuid != 'system_bot'`)
+    
+    // 3. 重置系统机器人的状态（清除它的匹配对象）
+    db.run(`UPDATE cards 
+            SET status=0, target_card_id=NULL, matched_by_card_id=NULL, match_partner=NULL, last_match_time=NULL 
+            WHERE uuid='system_bot'`)
+
+    db.run('COMMIT')
+    save()
+    return { success: true }
+  } catch (err) {
+    db.run('ROLLBACK')
+    console.error('Clear DB Error:', err)
+    return { success: false, message: err.message }
+  }
 }

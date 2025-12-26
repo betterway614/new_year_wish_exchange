@@ -4,6 +4,12 @@
       <h1>Dashboard</h1>
       <span class="subtitle">Overview of system status and matching statistics</span>
     </div>
+    
+    <div class="header-actions">
+        <button @click="handleClearDatabase" class="btn btn-danger-outline">
+          ⚠️ Clear Database
+        </button>
+      </div>
 
     <div class="stats-grid">
       <div class="card stat-card">
@@ -55,6 +61,34 @@ const fetchStats = async () => {
     }
   } catch (e) {
     console.error(e)
+  }
+}
+// === 新增：清空数据库的处理函数 ===
+const handleClearDatabase = async () => {
+  const confirmed = confirm(
+    '🛑 DANGER ZONE 🛑\n\n' +
+    'Are you sure you want to DELETE ALL DATA?\n' +
+    'This will remove all user cards and match records.\n' +
+    'This action cannot be undone!'
+  )
+  
+  if (!confirmed) return
+
+  try {
+    // 二次确认，防止手滑
+    if (!confirm('Final Confirmation: Really delete everything?')) return
+
+    const res = await request.post('/admin/reset')
+    if (res.code === 0) {
+      alert('System has been reset successfully.')
+      // 刷新数据
+      fetchStats()
+    } else {
+      alert(res.message || 'Reset failed')
+    }
+  } catch (e) {
+    console.error(e)
+    alert('Network error')
   }
 }
 
@@ -130,6 +164,34 @@ onMounted(() => {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 24px;
   margin-bottom: 24px;
+}
+/* === 新增样式 === */
+.header {
+  margin-bottom: 24px;
+  /* 让标题和按钮左右分布 */
+  display: flex; 
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-danger-outline {
+  background: transparent;
+  border: 1px solid #ff4d4f;
+  color: #ff4d4f;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-danger-outline:hover {
+  background: #fff1f0;
+  border-color: #ff7875;
+  box-shadow: 0 0 8px rgba(255, 77, 79, 0.2);
 }
 
 .card {

@@ -39,7 +39,7 @@
         <div class="status-card">
             <div class="status-row success-text">
                 <span class="check-icon">✓</span>
-                <span>祝福已安全寄出</span>
+                <span>祝福已寄出</span>
             </div>
             
             <div class="status-divider"></div>

@@ -254,7 +254,7 @@ const nicknameError = computed(() => {
   if (!nicknameTouched.value) return ''
   if (!nickname.value) return '请填写昵称'
   const check = wordFilter.validate(nickname.value)
-  if (!check.valid) return `包含敏感词，阳光向上正能量喔🤞`
+  if (!check.valid) return `包含敏感词（${check.word || '未知'}），阳光向上正能量喔☀️`
   if (nickname.value.length < 2) return '至少2字'
   if (nickname.value.length > 10) return '最多10字'
   return ''
@@ -264,8 +264,8 @@ const contentError = computed(() => {
   if (!contentTouched.value) return ''
   if (!content.value) return '请填写祝福'
   const check = wordFilter.validate(content.value)
-  if (!check.valid) return '包含敏感词，阳光向上正能量喔🤞'
-  if (content.value.length < 10) return '至少10字'
+  if (!check.valid) return `包含敏感词（${check.word || '未知'}），阳光向上正能量喔☀️`
+  if (content.value.length < 4) return '至少4字'
   if (content.value.length > 200) return '最多200字'
   return ''
 })
@@ -273,7 +273,7 @@ const contentError = computed(() => {
 const canSubmit = computed(() => {
   return nickname.value.length >= 2 && 
          nickname.value.length <= 10 && 
-         content.value.length >= 10 && 
+         content.value.length >= 4 && 
          content.value.length <= 200 &&
          !nicknameError.value && 
          !contentError.value

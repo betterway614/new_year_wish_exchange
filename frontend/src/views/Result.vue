@@ -39,7 +39,7 @@
                            <span>来自：{{ targetNickname }}</span>
                            <span class="sep">·</span>
                            <span v-if="deliveredToNickname">你的祝福已送达给：{{ deliveredToNickname }}</span>
-                           <span v-else>你的祝福未被人收到</span>
+                           <span v-else>你的祝福尚未被人收到，请稍后</span>
                         </div>
                     </div>
                     

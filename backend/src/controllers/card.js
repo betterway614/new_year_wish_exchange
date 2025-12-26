@@ -70,12 +70,15 @@ router.get('/card/my', async ctx => {
   // Check if matched
   if (self.status === 1 && self.target_card_id) {
     const target = getCardById(self.target_card_id)
+    const deliveredTo = self.matched_by_card_id ? getCardById(self.matched_by_card_id) : null
+    const receiverNickname = deliveredTo?.nickname || ''
     ctx.body = {
       code: 0,
       data: {
         status: 'MATCHED',
         self: { nickname: self.nickname, content: self.content, style_id: self.style_id },
-        target: { nickname: target.nickname, content: target.content, style_id: target.style_id, match_partner: self.match_partner }
+        target: { nickname: target.nickname, content: target.content, style_id: target.style_id, match_partner: self.match_partner },
+        delivery: { receiverNickname }
       }
     }
     return
@@ -106,12 +109,15 @@ router.get('/card/my', async ctx => {
     if (system) {
       updateMatch(self.id, system.id)
       const target = system
+      const refreshed = findByUUID(uuid)
+      const deliveredTo = refreshed?.matched_by_card_id ? getCardById(refreshed.matched_by_card_id) : null
       ctx.body = {
         code: 0,
         data: {
           status: 'MATCHED',
           self: { nickname: self.nickname, content: self.content, style_id: self.style_id },
-          target: { nickname: target.nickname, content: target.content, style_id: target.style_id, match_partner: target.nickname }
+          target: { nickname: target.nickname, content: target.content, style_id: target.style_id, match_partner: target.nickname },
+          delivery: { receiverNickname: deliveredTo?.nickname || '' }
         }
       }
       return
@@ -137,12 +143,15 @@ router.get('/card/my', async ctx => {
 
     updateMatch(self.id, choice.id)
     const target = getCardById(choice.id)
+    const refreshed = findByUUID(uuid)
+    const deliveredTo = refreshed?.matched_by_card_id ? getCardById(refreshed.matched_by_card_id) : null
     ctx.body = {
       code: 0,
       data: {
         status: 'MATCHED',
         self: { nickname: self.nickname, content: self.content, style_id: self.style_id },
-        target: { nickname: target.nickname, content: target.content, style_id: target.style_id, match_partner: target.nickname }
+        target: { nickname: target.nickname, content: target.content, style_id: target.style_id, match_partner: target.nickname },
+        delivery: { receiverNickname: deliveredTo?.nickname || '' }
       }
     }
     return
@@ -156,12 +165,15 @@ router.get('/card/my', async ctx => {
     if (system) {
       updateMatch(self.id, system.id)
       const target = system
+      const refreshed = findByUUID(uuid)
+      const deliveredTo = refreshed?.matched_by_card_id ? getCardById(refreshed.matched_by_card_id) : null
       ctx.body = {
         code: 0,
         data: {
           status: 'MATCHED',
           self: { nickname: self.nickname, content: self.content, style_id: self.style_id },
-          target: { nickname: target.nickname, content: target.content, style_id: target.style_id }
+          target: { nickname: target.nickname, content: target.content, style_id: target.style_id },
+          delivery: { receiverNickname: deliveredTo?.nickname || '' }
         }
       }
       return
@@ -174,12 +186,15 @@ router.get('/card/my', async ctx => {
     if (system) {
       updateMatch(self.id, system.id)
       const target = system
+      const refreshed = findByUUID(uuid)
+      const deliveredTo = refreshed?.matched_by_card_id ? getCardById(refreshed.matched_by_card_id) : null
       ctx.body = {
         code: 0,
         data: {
           status: 'MATCHED',
           self: { nickname: self.nickname, content: self.content, style_id: self.style_id },
-          target: { nickname: target.nickname, content: target.content, style_id: target.style_id }
+          target: { nickname: target.nickname, content: target.content, style_id: target.style_id },
+          delivery: { receiverNickname: deliveredTo?.nickname || '' }
         }
       }
       return

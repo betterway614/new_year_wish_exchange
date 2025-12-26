@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs'
 import { 
   getAllCards, removeCard, batchRemoveCards, updateCardContent, 
   stats, getCardById, findAdminByUsername, updateAdminLoginTime,
-  getConfig, setConfig, getAllDataForExport, getMatchTrend 
+  getConfig, setConfig, getAllDataForExport, getMatchTrend ,batchImportCards,clearDatabase
 } from '../models/db.js'
 import { signToken } from '../utils/jwt.js'
 import { authMiddleware } from '../middleware/auth.js'
@@ -115,6 +115,99 @@ router.get('/export', async ctx => {
   ctx.set('Content-Type', 'text/csv; charset=utf-8')
   ctx.set('Content-Disposition', 'attachment; filename=wishes_export.csv')
   ctx.body = csvContent
+})
+// 简易 CSV 解析器 (支持双引号包裹)
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(line => line.trim() !== '')
+  if (lines.length < 2) return [] // 至少要有 header 和一行数据
+
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase())
+  const result = []
+
+  // 正则用于匹配 CSV 字段：匹配不在引号内的逗号，或者引号内的内容
+  // 这是一个简化的 CSV 正则，能处理大部分标准 CSV
+  const regex = /(?:,|\n|^)("(?:(?:"")*|[^"]*)*"|[^",\n]*|(?:\n|$))/g
+
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i]
+    // 简单的 split 无法处理带逗号的内容，这里使用简易回退策略：
+    // 如果不包含引号，直接 split，否则尝试简单解析（生产环境建议前端解析传 JSON）
+    let values = []
+    
+    if (line.includes('"')) {
+       // 简易处理带引号的情况
+       let current = ''
+       let inQuote = false
+       for(let char of line) {
+         if(char === '"') { inQuote = !inQuote; continue; }
+         if(char === ',' && !inQuote) { values.push(current); current = ''; continue; }
+         current += char
+       }
+       values.push(current)
+    } else {
+       values = line.split(',')
+    }
+
+    const obj = {}
+    headers.forEach((header, index) => {
+      let val = values[index] ? values[index].trim() : ''
+      // 清理 CSV 转义的引号
+      val = val.replace(/^"|"$/g, '').replace(/""/g, '"')
+      
+      // 映射字段名
+      if (header === 'id' || header === 'uuid') obj.uuid = val
+      else if (header === 'nickname' || header === 'name') obj.nickname = val
+      else if (header === 'content' || header === 'wish') obj.content = val
+      else if (header === 'style_id' || header === 'style') obj.style_id = val
+      else if (header === 'created_at' || header === 'time') obj.created_at = val
+    })
+
+    if (obj.content) {
+      result.push(obj)
+    }
+  }
+  return result
+}
+
+router.post('/import', async ctx => {
+  const { csv } = ctx.request.body || {}
+  
+  if (!csv) {
+    ctx.status = 400
+    ctx.body = { code: 1, message: 'CSV content is required' }
+    return
+  }
+
+  try {
+    const cards = parseCSV(csv)
+    if (cards.length === 0) {
+      ctx.body = { code: 1, message: 'No valid data parsed from CSV' }
+      return
+    }
+
+    const result = batchImportCards(cards)
+    if (result.success) {
+      ctx.body = { code: 0, data: { count: result.count }, message: `Successfully imported ${result.count} cards` }
+    } else {
+      ctx.status = 500
+      ctx.body = { code: 1, message: result.message || 'Import failed' }
+    }
+  } catch (e) {
+    console.error(e)
+    ctx.status = 500
+    ctx.body = { code: 1, message: 'Server error during import' }
+  }
+})
+
+router.post('/reset', async ctx => {
+  // 增加一个简单的二次确认机制（可选，这里直接执行）
+  const result = clearDatabase()
+  if (result.success) {
+    ctx.body = { code: 0, message: 'Database cleared successfully' }
+  } else {
+    ctx.status = 500
+    ctx.body = { code: 1, message: result.message || 'Failed to clear database' }
+  }
 })
 
 export default router

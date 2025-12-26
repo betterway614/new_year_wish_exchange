@@ -6,9 +6,20 @@
         <span class="subtitle">Manage and moderate user wishes</span>
       </div>
       <div class="actions">
+        <button @click="triggerImport" class="btn btn-success">
+          <i class="icon">📤</i> Import CSV
+        </button>
+        <input 
+          type="file" 
+          ref="fileInputRef" 
+          accept=".csv" 
+          style="display: none" 
+          @change="handleFileChange" 
+        />
         <button @click="handleExport" class="btn btn-primary">
           <i class="icon">📥</i> Export CSV
         </button>
+        
         <button @click="handleBatchDelete" class="btn btn-danger" :disabled="selectedIds.length === 0">
           <i class="icon">🗑️</i> Delete Selected
         </button>
@@ -23,6 +34,8 @@
               <th width="40"><input type="checkbox" @change="toggleAll" :checked="isAllSelected" /></th>
               <th width="80">ID</th>
               <th width="150">Nickname</th>
+              <th width="180">Delivered To</th>
+              <th width="180">Received From</th>
               <th>Content</th>
               <th width="100">Status</th>
               <th width="160">Actions</th>
@@ -33,6 +46,8 @@
               <td><input type="checkbox" :value="item.id" v-model="selectedIds" /></td>
               <td>#{{ item.id }}</td>
               <td class="cell-nickname">{{ item.nickname }}</td>
+              <td class="cell-to">{{ item.delivered_to_nickname || '-' }}</td>
+              <td class="cell-from">{{ item.received_from_nickname || '-' }}</td>
               <td class="cell-content">
                 <div v-if="editingId === item.id" class="edit-wrapper">
                   <input v-model="editContent" class="form-input" @keyup.enter="saveEdit(item.id)" />
@@ -57,7 +72,7 @@
               </td>
             </tr>
             <tr v-if="list.length === 0">
-              <td colspan="6" class="empty-state">No data available</td>
+              <td colspan="8" class="empty-state">No data available</td>
             </tr>
           </tbody>
         </table>
@@ -85,6 +100,44 @@ const limit = 20
 const selectedIds = ref([])
 const editingId = ref(null)
 const editContent = ref('')
+
+
+const fileInputRef = ref(null)
+
+const triggerImport = () => {
+  fileInputRef.value.click()
+}
+
+const handleFileChange = (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+
+  const reader = new FileReader()
+  reader.onload = async (event) => {
+    const csvContent = event.target.result
+    try {
+      if (!confirm(`Confirm import of file "${file.name}"?`)) {
+        fileInputRef.value.value = ''
+        return
+      }
+
+      const res = await request.post('/admin/import', { csv: csvContent })
+      if (res.code === 0) {
+        alert(res.message || `Successfully imported ${res.data.count} items!`)
+        fetchList() // 刷新列表
+      } else {
+        alert(res.message || 'Import failed')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Import failed: Network or server error')
+    } finally {
+      // 清空 input，允许重复选择同一个文件
+      if (fileInputRef.value) fileInputRef.value.value = ''
+    }
+  }
+  reader.readAsText(file) // 以文本形式读取 CSV
+}
 
 const isAllSelected = computed(() => {
   return list.value.length > 0 && selectedIds.value.length === list.value.length
@@ -196,7 +249,8 @@ onMounted(fetchList)
 .btn-danger { background: #ff4d4f; color: white; box-shadow: 0 2px 0 rgba(255,77,79,0.1); }
 .btn-danger:hover { background: #ff7875; }
 .btn-danger:disabled { background: #f5f5f5; color: #d9d9d9; cursor: not-allowed; box-shadow: none; border: 1px solid #d9d9d9; }
-
+.btn-success { background: #52c41a; color: white; box-shadow: 0 2px 0 rgba(82,196,26,0.1); }
+.btn-success:hover { background: #73d13d; }
 .table-card { 
   background: white; 
   border-radius: 8px; 

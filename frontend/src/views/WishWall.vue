@@ -44,7 +44,7 @@
       <div class="status-text">
         <template v-if="isLoading">加载中...</template>
         <template v-else-if="loadError">{{ loadError }}</template>
-        <template v-else>屏幕祝福: {{ blessings.length }} 条</template>
+      
       </div>
       <button class="control-btn secondary" @click="clearAll">
         清空
@@ -66,6 +66,19 @@ const scaleRatio = ref(1)
 const windowHeight = ref(800)
 
 const scalerStyle = computed(() => {
+  const isFullScreen = scaleRatio.value >= 1
+
+  if (isFullScreen) {
+    return {
+      width: '100%',      // 宽度占满屏幕
+      height: '100%',     // 高度占满屏幕
+      position: 'absolute',
+      top: '0',
+      left: '0',
+      margin: '0',        // 去除原本的居中偏移
+      transform: 'none'   // 不需要缩放
+    }
+  }
   return {
     width: `${DESIGN_WIDTH}px`,
     // 高度反向补偿，确保缩放后正好填满垂直屏幕
@@ -134,8 +147,8 @@ const createBlessing = () => {
   if (blessingDatabase.value.length === 0) return
 
   const randomMsg = blessingDatabase.value[Math.floor(Math.random() * blessingDatabase.value.length)]
-  const top = Math.floor(Math.random() * 80) + 10 
-  const left = Math.floor(Math.random() * 80) + 10
+  const top = Math.floor(Math.random() * 92)  
+  const left = Math.floor(Math.random() * 92)
   const rotation = Math.floor(Math.random() * 20) - 10
   const zIndex = ++zIndexCounter
 
@@ -156,7 +169,7 @@ const createBlessing = () => {
 
   const lifeTimer = setTimeout(() => {
     removeBlessing(newBlessing.id)
-  }, 18000)
+  }, 22000)
 
   newBlessing.timer = lifeTimer
 }
@@ -182,7 +195,7 @@ const startGenerator = () => {
   if (isGenerating.value) return
   if (blessingDatabase.value.length === 0) return
   createBlessing();
-  generatorTimer = setInterval(createBlessing, 500);
+  generatorTimer = setInterval(createBlessing, 200);
   isGenerating.value = true;
 };
 
@@ -364,8 +377,8 @@ onUnmounted(() => {
   /* 默认情况（针对大屏/电脑）：
      使用固定宽度，模拟信纸感觉，不至于太宽难读 
   */
-  width: 600px; 
-  max-width: 90%; /* 防止极端情况溢出 */
+  width: 1300px; 
+  max-width: 80%; /* 防止极端情况溢出 */
   
   padding: 40px;
   font-size: 24px; /* 电脑端字号 */
@@ -378,10 +391,10 @@ onUnmounted(() => {
   height: auto;
 }
 /* 针对小屏幕（手机）的特殊处理 */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 300px) {
   .blessing-card.pinned {
     /* 1. 宽度加大：从 85% 增加到 92%，让卡片更宽，利用率更高 */
-    width: 110% !important; 
+    width: 150% !important; 
     
     /* 2. 内边距调整：稍微减小内边距，给文字腾地方 */
     padding: 30px 20px !important;
@@ -389,7 +402,7 @@ onUnmounted(() => {
     /* 3. 正文字号大幅增大：
        原理：目标视觉大小 16px / 缩放比例 0.3 ≈ 54px 
     */
-    font-size: 54px !important; 
+    font-size: 64px !important; 
     line-height: 1.6 !important;
   }
   
@@ -547,7 +560,7 @@ onUnmounted(() => {
   box-shadow: 0 5px 20px rgba(0,0,0,0.4);
   display: flex;
   gap: 12px;
-  z-index: 1000;
+  z-index: 20000 !important;
   align-items: center;
   white-space: nowrap; 
   max-width: 95vw;
