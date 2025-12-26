@@ -370,18 +370,17 @@ onUnmounted(() => {
   top: 50% !important;
   left: 50% !important;
   transform: translate(-50%, -50%) !important; 
-  z-index: 10000 !important;
-  isolation: isolate;
-  
+  z-index: 30000 !important;
+    /* === 核心修改点开始 === */
   /* === 核心修改点开始 === */
   /* 默认情况（针对大屏/电脑）：
      使用固定宽度，模拟信纸感觉，不至于太宽难读 
   */
   width: 1300px; 
   max-width: 80%; /* 防止极端情况溢出 */
-  
+    
   padding: 40px;
-  font-size: 24px; /* 电脑端字号 */
+  font-size: 28px; /* 电脑端字号，适当放大 */
   /* === 核心修改点结束 === */
 
   display: flex;
@@ -402,7 +401,7 @@ onUnmounted(() => {
     /* 3. 正文字号大幅增大：
        原理：目标视觉大小 16px / 缩放比例 0.3 ≈ 54px 
     */
-    font-size: 64px !important; 
+    font-size: 72px !important; 
     line-height: 1.6 !important;
   }
   
@@ -436,7 +435,7 @@ onUnmounted(() => {
 .blessing-card.pinned .card-text,
 .blessing-card.pinned .card-from {
     position: relative;
-    z-index: 1;
+    z-index: 2;
 }
 
 .blessing-card.pinned .card-from {
@@ -479,7 +478,7 @@ onUnmounted(() => {
     
     /* === 核心修改结束 === */
     
-    z-index: 0 !important;
+    z-index: -1 !important;
     pointer-events: auto;
     
     /* 增加一个渐变过渡，让遮罩出现得更柔和 */

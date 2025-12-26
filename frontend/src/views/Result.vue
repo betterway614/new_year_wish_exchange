@@ -51,10 +51,10 @@
                             重递祝福
                         </button>
                     </div>
-                    <!-- 新增查看心愿墙按钮 -->
+                    <!-- 新增查看祝福墙按钮 -->
                     <div class="btn-group" style="margin-top: 12px;">
                         <button class="action-btn outline-btn" @click="goWishWall">
-                            查看心愿墙
+                            查看祝福墙
                         </button>
                     </div>
                 </div>

@@ -1,8 +1,8 @@
 version: '3.8'
 services:
-  app:
+  backend:
     build: ./backend
-    container_name: new-year-exchange
+    container_name: new-year-exchange-backend
     restart: always
     ports:
       - "3000:3000"
@@ -10,5 +10,15 @@ services:
       - ./data:/app/data
     environment:
       - PORT=3000
+      - TZ=Asia/Shanghai
+  frontend:
+    build: ./frontend
+    container_name: new-year-exchange-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    environment:
       - TZ=Asia/Shanghai
 
