@@ -136,7 +136,7 @@ const handleFileChange = (e) => {
       if (fileInputRef.value) fileInputRef.value.value = ''
     }
   }
-  reader.readAsText(file) // 以文本形式读取 CSV
+  reader.readAsText(file, 'UTF-8') // 以UTF-8编码读取CSV，解决中文乱码问题
 }
 
 const isAllSelected = computed(() => {
@@ -176,9 +176,15 @@ const deleteOne = async (id) => {
 
 const handleBatchDelete = async () => {
   if (!confirm(`Are you sure you want to delete ${selectedIds.value.length} items?`)) return
-  await request.post('/admin/cards/delete', { ids: selectedIds.value })
-  selectedIds.value = []
-  fetchList()
+  try {
+    await request.post('/admin/cards/delete', { ids: selectedIds.value, confirm: 'DELETE_CONFIRMED' })
+    selectedIds.value = []
+    fetchList()
+    alert('Batch delete successful!')
+  } catch (err) {
+    console.error(err)
+    alert(err.message || 'Batch delete failed')
+  }
 }
 
 const startEdit = (item) => {

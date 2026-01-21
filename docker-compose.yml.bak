@@ -1,0 +1,33 @@
+version: '3.8'
+services:
+  backend:
+    build: ./backend
+    container_name: new-year-exchange-backend
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - PORT=3000
+      - TZ=Asia/Shanghai
+    networks:
+      - backend-net
+      - db-net
+
+  frontend:
+    build: ./frontend
+    container_name: new-year-exchange-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - frontend-net
+      - backend-net
+    ports:
+      - "10.65.18.54:80:80"  # 仅绑定到特定IP
+    environment:
+      - TZ=Asia/Shanghai
+

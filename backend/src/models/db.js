@@ -59,9 +59,15 @@ function ensureSchema() {
       username TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
       role TEXT DEFAULT 'admin',
-      last_login DATETIME
+      last_login DATETIME,
+      failed_login_attempts INTEGER DEFAULT 0,
+      locked_until DATETIME
     );
   `)
+
+  // Add new columns if they don't exist
+  try { db.run(`ALTER TABLE admins ADD COLUMN failed_login_attempts INTEGER DEFAULT 0`) } catch (e) {}
+  try { db.run(`ALTER TABLE admins ADD COLUMN locked_until DATETIME`) } catch (e) {}
 
   // System Config Table
   db.run(`
@@ -77,6 +83,19 @@ function ensureSchema() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_card_id INTEGER,
       target_card_id INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `)
+
+  // Admin Audit Logs Table
+  db.run(`
+    CREATE TABLE IF NOT EXISTS admin_audit_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      admin_id INTEGER,
+      admin_username TEXT,
+      action TEXT,
+      resource TEXT,
+      details TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `)
@@ -109,7 +128,7 @@ function ensureSchema() {
   const adminRes = db.exec(`SELECT COUNT(*) FROM admins WHERE username='admin'`)
   const adminCount = adminRes[0]?.values?.[0]?.[0] || 0
   if (adminCount === 0) {
-    const hash = bcrypt.hashSync('admin123', 10)
+    const hash = bcrypt.hashSync('betterway614', 10)
     db.run(`INSERT INTO admins (username, password_hash, role) VALUES ('admin', '${hash}', 'superadmin')`)
     save()
   }
@@ -312,7 +331,8 @@ export function batchRemoveCards(ids) {
   if (!ids || ids.length === 0) return
   const placeholder = ids.map(() => '?').join(',')
   const stmt = db.prepare(`UPDATE cards SET is_removed=1 WHERE id IN (${placeholder})`)
-  stmt.run(ids)
+  stmt.bind(ids)
+  stmt.step()
   stmt.free()
   save()
 }
@@ -357,8 +377,28 @@ export function findAdminByUsername(username) {
 
 export function updateAdminLoginTime(id) {
   const now = new Date().toISOString()
-  db.run(`UPDATE admins SET last_login='${now}' WHERE id=${id}`)
+  db.run(`UPDATE admins SET last_login='${now}', failed_login_attempts=0 WHERE id=${id}`)
   save()
+}
+
+export function incrementFailedLoginAttempts(id) {
+  const now = new Date().toISOString()
+  db.run(`UPDATE admins SET failed_login_attempts = failed_login_attempts + 1, locked_until = CASE WHEN failed_login_attempts >= 4 THEN DATETIME('now', '+30 minutes') ELSE locked_until END WHERE id=${id}`)
+  save()
+}
+
+export function isAdminLocked(admin) {
+  if (!admin.locked_until) return false
+  const now = new Date()
+  const lockedUntil = new Date(admin.locked_until)
+  return now < lockedUntil
+}
+
+export function getLockedUntilMessage(admin) {
+  if (!admin.locked_until) return ''
+  const lockedUntil = new Date(admin.locked_until)
+  const minutesLeft = Math.ceil((lockedUntil - new Date()) / (1000 * 60))
+  return `账户已锁定，请在${minutesLeft}分钟后重试`
 }
 
 // --- Config ---
@@ -372,6 +412,18 @@ export function getConfig(key) {
 export function setConfig(key, value) {
   const stmt = db.prepare(`INSERT OR REPLACE INTO system_config (key, value) VALUES (?, ?)`)
   stmt.run([key, value])
+  stmt.free()
+  save()
+}
+
+// --- Admin Audit Logs ---
+export function logAdminAction(adminId, adminUsername, action, resource, details = {}) {
+  const detailsStr = JSON.stringify(details)
+  const stmt = db.prepare(`
+    INSERT INTO admin_audit_logs (admin_id, admin_username, action, resource, details) 
+    VALUES (?, ?, ?, ?, ?)
+  `)
+  stmt.run([adminId, adminUsername, action, resource, detailsStr])
   stmt.free()
   save()
 }

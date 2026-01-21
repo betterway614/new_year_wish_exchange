@@ -4,21 +4,52 @@ services:
     build: ./backend
     container_name: new-year-exchange-backend
     restart: always
-    ports:
-      - "3000:3000"
     volumes:
       - ./data:/app/data
     environment:
       - PORT=3000
       - TZ=Asia/Shanghai
+      - JWT_SECRET=your-secret-key-change-this-in-production
+    user: "1001:1001"  # 使用非root用户
+    read_only: true  # 只读文件系统
+    cap_drop:        # 移除危险权限
+      - ALL
+    cap_add:         # 仅添加必要权限
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true  # 禁止提升权限
+    networks:
+      - backend-net
+      - db-net
+
   frontend:
     build: ./frontend
     container_name: new-year-exchange-frontend
     restart: always
-    ports:
-      - "80:80"
     depends_on:
       - backend
+    user: "1001:1001"  # 使用非root用户
+    cap_drop:        # 移除危险权限
+      - ALL
+    cap_add:         # 仅添加必要权限
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true  # 禁止提升权限
+    networks:
+      - frontend-net
+      - backend-net
+    ports:
+      - "80:8080"  # 映射到本地80端口，方便访问
     environment:
       - TZ=Asia/Shanghai
+    tmpfs:
+      - /run:uid=1001,gid=1001,mode=0755
+      - /var/cache/nginx:uid=1001,gid=1001,mode=0755
 
+networks:
+  frontend-net:
+    internal: false
+  backend-net:
+    internal: true  # 仅允许内部访问
+  db-net:
+    internal: true  # 仅允许数据库相关访问

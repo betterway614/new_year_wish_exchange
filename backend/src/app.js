@@ -1,3 +1,8 @@
+import dotenv from 'dotenv'
+
+// Load environment variables from .env file first
+dotenv.config()
+
 import Koa from 'koa'
 import Router from 'koa-router'
 import bodyParser from 'koa-bodyparser'
