@@ -14,8 +14,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-.font-brush { font-family: 'Ma Shan Zheng', cursive; }
-.font-elegant { font-family: 'ZCOOL XiaoWei', serif; }
+.font-brush { font-family: "KaiTi", "STKaiti", "楷体", serif; }
+.font-elegant { font-family: "Microsoft YaHei", "微软雅黑", "SimHei", "黑体", sans-serif; }
 
 /* 常用动画关键帧 */
 @keyframes float {

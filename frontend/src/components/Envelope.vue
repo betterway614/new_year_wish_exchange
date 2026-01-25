@@ -145,7 +145,7 @@ function open() {
 }
 
 .seal-text {
-  font-family: 'Ma Shan Zheng', cursive;
+  font-family: "KaiTi", "STKaiti", "楷体", serif;
   color: #b71c1c;
   font-size: 1.2rem;
   transform: rotate(-15deg);

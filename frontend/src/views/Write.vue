@@ -14,7 +14,7 @@
                 </svg>
             </div>
             <div class="nav-title-box">
-                <span class="nav-title font-brush">新年悦换</span>
+                <span class="nav-title font-brush">新春悦换</span>
                 <p class="nav-subtitle">NEW YEAR EXCHANGE</p>
             </div>
         </div>
@@ -63,7 +63,7 @@
             <div class="form-group">
                 <label class="form-label">
                     <span class="step-badge badge-yellow">2</span>
-                    新年寄语
+                    新春寄语
                     <span class="error-tip" v-if="contentError">{{ contentError }}</span>
                 </label>
                 <div class="input-wrapper">
@@ -73,7 +73,7 @@
                         @blur="contentTouched=true"
                         rows="5" 
                         maxlength="200"
-                        placeholder="写下您对有缘人的新年祝愿，字字珠玑，句句真情..."
+                        placeholder="写下您对有缘人的新春祝愿，字字珠玑，句句真情..."
                         class="input-deco textarea-deco"
                         :disabled="isSubmitting"
                     ></textarea>

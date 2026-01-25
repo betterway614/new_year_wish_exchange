@@ -25,7 +25,7 @@
         <div class="lantern-deco lantern-right">🏮</div>
         
         <div class="logo-icon animate-bounce">🧧</div>
-        <h1 class="main-title font-brush glow-text">新年悦换</h1>
+        <h1 class="main-title font-brush glow-text">新春悦换</h1>
         <div class="subtitle-wrapper">
             <div class="line-deco line-left"></div>
             <p class="subtitle font-elegant">2026 NEW YEAR EXCHANGE</p>

@@ -325,7 +325,7 @@ onUnmounted(() => {
   width: 100vw;
   height: 100vh;
   overflow: hidden; 
-  font-family: "Ma Shan Zheng", "ZCOOL XiaoWei", serif;
+  font-family: "KaiTi", "STKaiti", "楷体", "Microsoft YaHei", "微软雅黑", serif;
   z-index: 100;
   background: #5e0e1c; /* 底色 */
 }
@@ -394,7 +394,7 @@ onUnmounted(() => {
   outline: 3px double rgba(196, 30, 58, 0.2);
   outline-offset: -4px;
   animation: cardAppear 0.6s ease-out;
-  font-family: "ZCOOL XiaoWei", serif;
+  font-family: "Microsoft YaHei", "微软雅黑", "SimHei", "黑体", sans-serif;
   transform: rotate(var(--rotation));
 }
 
@@ -737,7 +737,7 @@ onUnmounted(() => {
   letter-spacing: 0.2rem;
   font-weight: bold;
   animation: titleGlow 3s ease-in-out infinite;
-  font-family: "Ma Shan Zheng", serif;
+  font-family: "KaiTi", "STKaiti", "楷体", serif;
 }
 
 @keyframes titleGlow {
@@ -749,6 +749,6 @@ onUnmounted(() => {
   font-size: 1.2rem;
   color: rgba(255, 255, 255, 0.9);
   font-weight: 300;
-  font-family: "ZCOOL XiaoWei", serif;
+  font-family: "Microsoft YaHei", "微软雅黑", "SimHei", "黑体", sans-serif;
 }
 </style>
